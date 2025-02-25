@@ -29,6 +29,8 @@ Welcome to OuroGPT! This powerful AI chatbot system features two intelligent bot
 1️⃣ Download OuroGPT
 
 git clone https://github.com/roBlockweb/ouro.git
+
+BASH
 cd ouro
 
 2️⃣ Set Up a Virtual Environment
