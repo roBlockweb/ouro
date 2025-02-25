@@ -89,6 +89,6 @@ You type messages, and Brain responds in real time!
 
 This project is open-source! Feel free to use, modify, and share it.
 
-❤️ Created by Rohan & Team
+❤️ Created by roBlock
 
 Enjoying OuroGPT? Share it with others and contribute to the project!
