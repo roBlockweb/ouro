@@ -1,0 +1,44 @@
+# Core dependencies
+llama-cpp-python==0.3.7      # Local LLM inference with Mistral 7B
+faiss-cpu==1.10.0            # Vector similarity search
+sentence-transformers==3.4.1  # Text embedding generation
+numpy==2.2.3                 # Numerical operations
+torch==2.6.0                 # Deep learning framework
+
+# Web scraping
+selenium==4.10.0             # Browser automation for dynamic content
+beautifulsoup4>=4.13.0       # HTML parsing
+webdriver-manager>=4.0.0     # Chrome driver management 
+requests==2.32.3             # HTTP requests
+
+# Optional data services
+redis==4.6.0                 # Optional caching
+pika==1.3.1                  # Optional message queue
+
+# ML/NLP stack
+transformers==4.49.0         # Transformer models
+scikit-learn==1.6.1          # Machine learning utilities
+scipy==1.15.2                # Scientific computing
+
+# Utilities
+tqdm==4.67.1                 # Progress bars
+joblib==1.4.2                # Parallel processing
+regex==2024.11.6             # Enhanced regular expressions
+pyyaml==6.0.2                # YAML parsing
+typing-extensions==4.12.2    # Type hinting extras
+pillow==11.1.0               # Image processing
+diskcache==5.6.3             # Local disk caching
+
+# Model support
+huggingface-hub==0.29.1      # Model downloading
+tokenizers==0.21.0           # Tokenization
+safetensors==0.5.2           # Model weight storage
+
+# Low-level dependencies
+networkx==3.4.2              # Graph operations
+sympy==1.13.1                # Symbolic mathematics
+mpmath==1.3.0                # Arbitrary precision math
+certifi==2025.1.31           # SSL certificates
+charset-normalizer==3.4.1    # Encoding detection
+fsspec==2025.2.0             # Filesystem interfaces
+filelock==3.17.0             # File locking
