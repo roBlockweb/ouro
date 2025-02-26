@@ -38,8 +38,8 @@ Welcome to **OuroGPT**, a fully autonomous AI conversation loop powered by a loc
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/YourUsername/OuroGPT.git
-   cd OuroGPT
+   git clone https://github.com/roBlockweb/Ouro.git
+   cd Ouro
    ```
 
 2. **Download Mistral model**:
