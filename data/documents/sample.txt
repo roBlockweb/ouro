@@ -1,0 +1,52 @@
+# Ouro Sample Document
+
+This is a sample document to test the Ouro RAG system. It contains information about artificial intelligence and retrieval-augmented generation.
+
+## Retrieval-Augmented Generation (RAG)
+
+Retrieval-Augmented Generation (RAG) is a technique that combines retrieval-based and generation-based approaches to improve the quality of text generation. In a RAG system, a retrieval component first finds relevant information from a knowledge base, and then a generation component uses this information to produce a response.
+
+RAG has several advantages:
+
+1. It can access external knowledge not present in the model's parameters
+2. It can provide up-to-date information
+3. It can cite sources for its statements
+4. It reduces hallucinations by grounding generation in retrieved facts
+
+A typical RAG pipeline includes these steps:
+- Indexing: Documents are chunked and embedded into a vector database
+- Retrieval: When a query arrives, relevant chunks are retrieved
+- Augmentation: Retrieved information is combined with the query
+- Generation: An LLM generates a response using the augmented context
+
+## Local LLMs
+
+Local Large Language Models (LLMs) are AI models that run directly on a user's device rather than in the cloud. These models offer several benefits:
+
+1. Privacy: All data stays on the user's device
+2. No internet requirement: Can be used offline
+3. No usage costs: Once downloaded, there are no API fees
+4. Customization: Can be fine-tuned for specific applications
+
+Popular local LLMs include:
+- Llama 2
+- Mistral
+- Phi-2
+- Flan-T5
+
+## Vector Databases
+
+Vector databases are specialized data storage systems designed to store and query vector embeddings efficiently. They are a critical component of RAG systems, enabling semantic search by finding vectors that are similar to a query vector.
+
+Key features of vector databases include:
+- Fast similarity search algorithms (e.g., approximate nearest neighbors)
+- Scalability to handle millions or billions of vectors
+- Support for metadata filtering
+- Hybrid search capabilities (combining semantic and keyword search)
+
+Popular vector databases include:
+- FAISS
+- Chroma
+- Milvus
+- Pinecone
+- Qdrant

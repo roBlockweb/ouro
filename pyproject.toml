@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ouro"
+version = "0.1.0"
+description = "Ouro: Offline RAG System"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "roBlock"}
+]
+dependencies = [
+    "transformers>=4.28.0",
+    "sentence-transformers>=2.2.2",
+    "faiss-cpu>=1.7.4",
+    "langchain>=0.0.267",
+    "langchain-community>=0.0.6",
+    "langchain-text-splitters>=0.0.1",
+    "huggingface_hub>=0.16.4",
+    "tqdm>=4.65.0",
+    "numpy>=1.24.3",
+    "pypdf>=3.12.1",
+    "rich>=13.4.2",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/roBlock/ouro"
+"Bug Tracker" = "https://github.com/roBlock/ouro/issues"
+
+[tool.setuptools]
+packages = ["src"]
