@@ -71,8 +71,25 @@ def show_huggingface_instructions():
     instructions = get_huggingface_login_instructions()
     console.print(Panel(Markdown(instructions), title="Hugging Face Authentication", border_style="yellow"))
 
+def check_huggingface_credentials() -> bool:
+    """
+    Check if Hugging Face credentials are already configured
+    Returns True if credentials exist, False otherwise
+    """
+    try:
+        from huggingface_hub import HfFolder
+        token = HfFolder.get_token()
+        return token is not None and len(token) > 0
+    except Exception:
+        return False
+
 def setup_huggingface_login() -> bool:
     """Ensure user is logged in to Hugging Face"""
+    # First check if credentials already exist
+    if check_huggingface_credentials():
+        console.print("[bold green]✓[/bold green] Hugging Face authentication already set up.")
+        return True
+        
     console.print("\n[bold]Setting up Hugging Face authentication[/bold]")
     console.print("Ouro requires access to Hugging Face to download models.")
     
@@ -84,10 +101,33 @@ def setup_huggingface_login() -> bool:
         console.print("Please enter your Hugging Face token when prompted.")
         
         # Attempt login
-        return login_huggingface()
+        login_success = login_huggingface()
+        
+        if not login_success:
+            console.print("\n[bold red]❌ Hugging Face authentication failed[/bold red]")
+            console.print("Please check GUIDE.md for detailed setup instructions.")
+            console.print("You can try again by running: huggingface-cli login")
+            
+            if Confirm.ask("Would you like to continue anyway?"):
+                console.print("[yellow]Warning: Some models may not be accessible without authentication.[/yellow]")
+                return False
+            else:
+                console.print("[bold yellow]Exiting Ouro.[/bold yellow]")
+                console.print("Please try again after setting up Hugging Face authentication.")
+                sys.exit(0)
+        
+        return login_success
     else:
-        console.print("[yellow]Warning: Some models may not be accessible without authentication.[/yellow]")
-        return False
+        console.print("[bold yellow]⚠️ Hugging Face authentication is required to use Ouro.[/bold yellow]")
+        console.print("Please check GUIDE.md for detailed setup instructions.")
+        
+        if Confirm.ask("Would you like to continue anyway?"):
+            console.print("[yellow]Warning: Most features will not work without authentication.[/yellow]")
+            return False
+        else:
+            console.print("[bold yellow]Exiting Ouro.[/bold yellow]")
+            console.print("Please try again after setting up Hugging Face authentication.")
+            sys.exit(0)
 
 def display_model_options():
     """Display available model configurations in a table"""
@@ -122,73 +162,139 @@ def display_model_options():
     
     console.print(table)
 
-def select_model() -> Tuple[str, Dict[str, Any]]:
+def select_model(preset_model: str = None) -> Tuple[str, Dict[str, Any]]:
     """Let the user select a model configuration
+    
+    Args:
+        preset_model: Optional model size to use, bypassing interactive selection
     
     Returns:
         Tuple of (model_path, model_config)
     """
     model_configs = get_available_model_sizes()
+    default_size = "Small"  # Default to small model for better reliability
     
+    # If preset model is provided via command line
+    if preset_model and preset_model in model_configs:
+        size = preset_model
+        config = model_configs[size]
+        model_path = config["llm"]
+        embedding_model = EMBEDDING_MODELS[config["embedding"]]
+        
+        console.print(f"\nUsing preset model configuration: [bold green]{size}[/bold green]")
+        console.print(f"  - LLM: [blue]{model_path}[/blue]")
+        console.print(f"  - Embedding: [yellow]{embedding_model}[/yellow]")
+        console.print(f"  - Description: {config['description']}")
+        
+        return model_path, config
+    
+    # Interactive selection
     console.print("\n[bold]Select a model configuration:[/bold]")
     console.print("[italic]Choose based on your computer's capabilities and your needs:[/italic]")
     
     display_model_options()
     
-    # Get user selection
-    while True:
-        try:
-            choice = Prompt.ask("\nSelect an option", default=str(list(model_configs.keys()).index(DEFAULT_SIZE) + 1))
-            
-            if choice.isdigit():
-                choice_num = int(choice)
-                if 1 <= choice_num <= len(model_configs):
-                    # Get model config from the list
-                    size = list(model_configs.keys())[choice_num-1]
-                    config = model_configs[size]
-                    model_path = config["llm"]
-                    embedding_model = EMBEDDING_MODELS[config["embedding"]]
-                    
-                    console.print(f"Selected configuration: [bold green]{size}[/bold green]")
-                    console.print(f"  - LLM: [blue]{model_path}[/blue]")
-                    console.print(f"  - Embedding: [yellow]{embedding_model}[/yellow]")
-                    console.print(f"  - Description: {config['description']}")
-                    
-                    return model_path, config
-                elif choice_num == len(model_configs) + 1:
-                    # Custom model
-                    model_path = Prompt.ask("Enter Hugging Face model path (e.g., 'mistralai/Mistral-7B-v0.1')")
-                    embedding_choice = Prompt.ask(
-                        "Choose embedding size (Small, Medium, Large)", 
-                        choices=["Small", "Medium", "Large"],
-                        default="Medium"
-                    )
-                    
-                    # Create custom config
-                    custom_config = get_custom_model_template()
-                    custom_config["llm"] = model_path
-                    custom_config["embedding"] = embedding_choice
-                    
-                    console.print(f"Selected custom model: [bold blue]{model_path}[/bold blue]")
-                    console.print(f"With [yellow]{embedding_choice}[/yellow] embeddings")
-                    
-                    return model_path, custom_config
-            
-            console.print("[red]Invalid choice. Please try again.[/red]")
+    default_choice = str(list(model_configs.keys()).index(default_size) + 1)
+    
+    try:
+        # Try to get user selection
+        choice = Prompt.ask("\nSelect an option", default=default_choice)
         
-        except Exception as e:
-            console.print(f"[red]Error: {str(e)}[/red]")
+        if not choice.isdigit():
+            console.print(f"[yellow]Invalid choice, using default: {default_size}[/yellow]")
+            choice = default_choice
+            
+        choice_num = int(choice)
+            
+    except (EOFError, KeyboardInterrupt):
+        # Handle non-interactive environments
+        console.print(f"[yellow]Non-interactive environment detected. Using default: {default_size}[/yellow]")
+        
+        # Default to Small model
+        size = default_size
+        config = model_configs[size]
+        model_path = config["llm"]
+        embedding_model = EMBEDDING_MODELS[config["embedding"]]
+        
+        console.print(f"Selected configuration: [bold green]{size}[/bold green]")
+        console.print(f"  - LLM: [blue]{model_path}[/blue]")
+        console.print(f"  - Embedding: [yellow]{embedding_model}[/yellow]")
+        console.print(f"  - Description: {config['description']}")
+        
+        return model_path, config
+    
+    # Process the selection
+    try:
+        if 1 <= choice_num <= len(model_configs):
+            # Get model config from the list
+            size = list(model_configs.keys())[choice_num-1]
+            config = model_configs[size]
+            model_path = config["llm"]
+            embedding_model = EMBEDDING_MODELS[config["embedding"]]
+            
+            console.print(f"Selected configuration: [bold green]{size}[/bold green]")
+            console.print(f"  - LLM: [blue]{model_path}[/blue]")
+            console.print(f"  - Embedding: [yellow]{embedding_model}[/yellow]")
+            console.print(f"  - Description: {config['description']}")
+            
+            return model_path, config
+        elif choice_num == len(model_configs) + 1:
+            try:
+                # Custom model
+                model_path = Prompt.ask("Enter Hugging Face model path (e.g., 'mistralai/Mistral-7B-v0.1')")
+                embedding_choice = Prompt.ask(
+                    "Choose embedding size (Small, Medium, Large)", 
+                    choices=["Small", "Medium", "Large"],
+                    default="Medium"
+                )
+                
+                # Create custom config
+                custom_config = get_custom_model_template()
+                custom_config["llm"] = model_path
+                custom_config["embedding"] = embedding_choice
+                
+                console.print(f"Selected custom model: [bold blue]{model_path}[/bold blue]")
+                console.print(f"With [yellow]{embedding_choice}[/yellow] embeddings")
+                
+                return model_path, custom_config
+            except (EOFError, KeyboardInterrupt):
+                # If any input fails, fall back to default
+                console.print("[yellow]Input interrupted. Using default Small model.[/yellow]")
+                size = default_size
+                config = model_configs[size]
+                return config["llm"], config
+        else:
+            # Invalid selection, use default
+            console.print(f"[yellow]Invalid choice. Using default: {default_size}[/yellow]")
+            size = default_size
+            config = model_configs[size]
+            return config["llm"], config
+    except Exception as e:
+        # Any other error, fall back to default model
+        console.print(f"[red]Error in model selection: {str(e)}[/red]")
+        console.print(f"[yellow]Using default model: {default_size}[/yellow]")
+        size = default_size
+        config = model_configs[size]
+        return config["llm"], config
 
-def initialize_system() -> OuroRAG:
-    """Initialize the RAG system with progress tracking"""
+def initialize_system(preset_model: str = None) -> OuroRAG:
+    """
+    Initialize the RAG system with progress tracking
+    
+    Args:
+        preset_model: Optional model size to use, bypassing interactive selection
+    
+    Returns:
+        Initialized OuroRAG instance
+    """
     # Welcome the user
     welcome_message()
     
     # Setup Hugging Face authentication
     setup_huggingface_login()
     
-    # Let the user select a model configuration
-    model_path, model_config = select_model()
+    # Let the user select a model configuration or use preset
+    model_path, model_config = select_model(preset_model)
     
     # Get embedding model from the config
     embedding_model_name = EMBEDDING_MODELS[model_config["embedding"]]
@@ -389,19 +495,72 @@ def handle_query(rag_system: OuroRAG, query: str) -> None:
         
         # Print the response in a panel
         console.print(Panel(response, title="Ouro's Response", border_style="green"))
+    
     except Exception as e:
         console.print(f"[red]Error processing query: {str(e)}[/red]")
+        console.print("[yellow]For better performance, try using the Small model with './run.sh --small'[/yellow]")
+
+def ensure_directories_exist():
+    """Make sure all necessary directories exist"""
+    try:
+        # Create directories for storing data
+        from src.config import DATA_DIR, DOCUMENTS_DIR, MODEL_CACHE_DIR, VECTOR_STORE_DIR, LOGS_DIR
+        
+        # Create each directory
+        for directory in [DATA_DIR, DOCUMENTS_DIR, MODEL_CACHE_DIR, VECTOR_STORE_DIR, LOGS_DIR]:
+            directory.mkdir(parents=True, exist_ok=True)
+            
+        console.print(f"[dim]Data directories created at {DATA_DIR}[/dim]")
+    except Exception as e:
+        console.print(f"[red]Error creating directories: {str(e)}[/red]")
+        console.print("[yellow]Try running with sudo or as administrator if permission issues occur[/yellow]")
+        sys.exit(1)
+
+def show_welcome_banner():
+    """Show a fancy welcome banner"""
+    ascii_logo = """
+   ____  _    _ ____   _____
+  / __ \\| |  | |  __ \\ / ____|
+ | |  | | |  | | |__) | |     
+ | |  | | |  | |  _  /| |     
+ | |__| | |__| | | \\ \\| |____ 
+  \\____/ \\____/|_|  \\_\\\\_____|
+                           
+    """
+    # Display welcome banner
+    console.print(Panel(f"[bold green]{ascii_logo}[/bold green]\n[bold]Privacy-First Local RAG System[/bold]", 
+                       border_style="green", 
+                       subtitle="v0.1.0"))
+    console.print("Welcome to Ouro, your private AI assistant for querying documents.")
+    console.print("All processing happens locally on your machine - your data stays private.\n")
 
 def main():
     """Main entry point for the CLI"""
+    # Display welcome banner
+    show_welcome_banner()
+    
+    # Ensure all directories exist
+    ensure_directories_exist()
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Ouro - Privacy-First Local RAG System")
     parser.add_argument("--ingest", help="Ingest a document before starting the interactive mode")
     parser.add_argument("--ingest-dir", help="Ingest all documents in a directory before starting")
+    parser.add_argument("--model", choices=["Small", "Medium", "Large", "Very Large"], 
+                       help="Specify the model size to use (bypasses interactive selection)")
     args = parser.parse_args()
     
     # Initialize the system
-    rag_system = initialize_system()
+    try:
+        rag_system = initialize_system(preset_model=args.model)
+    except KeyboardInterrupt:
+        console.print("\n[bold yellow]Setup interrupted. Exiting Ouro.[/bold yellow]")
+        console.print("Please run again when you're ready to complete the setup.")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[bold red]Error during initialization: {str(e)}[/bold red]")
+        console.print("Please check GUIDE.md for troubleshooting information.")
+        sys.exit(1)
     
     # Handle command line options
     if args.ingest:
@@ -412,9 +571,15 @@ def main():
     
     # Main interaction loop
     print_help()
+    console.print("\n[bold green]Ouro is ready![/bold green] Type your questions or commands.")
+    console.print("[bold cyan]Quick start:[/bold cyan]")
+    console.print("1. [bold]Try asking:[/bold] 'What is RAG?' to test with the sample document")
+    console.print("2. [bold]Add documents:[/bold] Type 'ingest <file_path>' to add your own files")
+    console.print("3. [bold]Exit:[/bold] Type 'exit' when you're done\n")
+    
     while True:
         try:
-            command = Prompt.ask("\n[bold]Ouro[/bold]").strip()
+            command = Prompt.ask("\n[bold blue]User[/bold blue]").strip()
             
             if not command:
                 continue
@@ -451,13 +616,24 @@ def main():
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation interrupted.[/yellow]")
             
-            # Ask if the user wants to exit
-            if Confirm.ask("Do you want to exit Ouro?"):
-                console.print("[bold green]Goodbye! Thank you for using Ouro.[/bold green]")
+            try:
+                # Ask if the user wants to exit
+                if Confirm.ask("Do you want to exit Ouro?"):
+                    console.print("[bold green]Goodbye! Thank you for using Ouro.[/bold green]")
+                    break
+            except (EOFError, KeyboardInterrupt):
+                # If we can't get input, just exit
+                console.print("[bold yellow]Input unavailable. Exiting Ouro.[/bold yellow]")
                 break
-        
+                
+        except EOFError:
+            # EOF usually means we're in a non-interactive environment
+            console.print("\n[bold yellow]EOF detected. Exiting Ouro.[/bold yellow]")
+            break
+            
         except Exception as e:
             console.print(f"[red]Error: {str(e)}[/red]")
+            console.print("[yellow]Type 'help' to see available commands or 'exit' to quit.[/yellow]")
 
 if __name__ == "__main__":
     try:

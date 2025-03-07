@@ -32,10 +32,19 @@ env/
 *.swo
 
 # Ouro specific
-data/models/
-data/vector_store/
-logs/
+data/models/*
+!data/models/.gitkeep
+data/vector_store/*
+!data/vector_store/.gitkeep
+data/documents/*.txt
+data/documents/*.pdf
+data/documents/*.md
+!data/documents/sample.txt
+!data/documents/.gitkeep
+logs/*
+!logs/.gitkeep
 .requirements_installed
+test_*.py
 
 # Operating System
 .DS_Store

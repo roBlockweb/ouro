@@ -1,169 +1,154 @@
 # Ouro: Privacy-First Local RAG System
 
-Ouro is a fully offline RAG (Retrieval-Augmented Generation) system that runs completely on your local machine. Built with privacy as a priority, it leverages open-source language models and vector embeddings to provide context-aware responses based on your documents, without sending any data to external services.
+Ouro is a fully offline RAG (Retrieval-Augmented Generation) system that runs completely on your local machine. It lets you ask questions about your documents using AI, without sending any of your data to external services.
 
 <p align="center">
   <img src="docs/ouro-logo.png" alt="Ouro Logo" width="200"/>
 </p>
 
-## 🌟 Key Features
+## ✨ What is Ouro?
 
-- **100% Private & Offline**: All processing happens locally—no data leaves your machine
-- **Local LLM Support**: Works with Mistral, TinyLlama, Phi-2, Flan-T5, and custom models
-- **Multi-Format Documents**: Process text, PDF, Markdown, and more
-- **Smart Chunking**: Intelligently splits documents for better retrieval accuracy
-- **Vector Search**: Fast similarity search with FAISS vector database
-- **Clean Terminal UI**: User-friendly interface with rich text formatting and progress indicators
-- **Simplified Configuration**: Choose from Small, Medium, Large, or custom model setups
+Think of Ouro as a private AI assistant that helps you find information in your documents:
 
-## 📋 System Requirements
+- **100% Private**: Everything runs on your computer - no data is sent to the cloud
+- **Easy to Use**: Simple interface that guides you through each step
+- **Flexible**: Works with different models based on your computer's capabilities
+- **Multi-Format**: Process text files, PDFs, and Markdown documents
+- **Reliable**: Built-in timeouts and robust error handling prevent hanging
+- **Intuitive**: Clear UI with user/assistant distinction and helpful prompts
 
-- Python 3.8 or newer
-- RAM requirements depend on model choice:
-  - Small: 2-4GB RAM
-  - Medium: 4-6GB RAM
-  - Large: 6-8GB RAM
-  - Very Large: 12-16GB RAM
-- Storage for downloaded models (varies by model choice)
-- Hugging Face account (free) for model downloads
+## 🚀 Getting Started
 
-## 🚀 Quick Start
+### Step 1: Set Up Prerequisites
 
-### Installation
+Before using Ouro, you need to set up a Hugging Face account for downloading models.
+
+📝 **Please follow the instructions in [GUIDE.md](GUIDE.md) first** to create an account and get your token.
+
+### Step 2: Clone the Repository
 
 ```bash
-# Clone the repository
+# Copy and paste this in your terminal:
 git clone https://github.com/roBlock/ouro.git
 cd ouro
+```
 
-# Set up and run (installs dependencies in virtual environment)
+### Step 3: Run Ouro
+
+```bash
+# On macOS/Linux:
 ./run.sh
+
+# On Windows:
+./run.bat
+# Or manually:
+python -m pip install -r requirements.txt
+python -m src.main
 ```
 
-### Using Docker
+That's it! The application will guide you through the rest of the process.
 
-```bash
-# Build the Docker image
-docker build -t ouro .
+> **Tips**: 
+> - If you encounter memory issues, use the small model preset:
+>   ```bash
+>   ./run.sh --small
+>   ```
+> - If you have problems with interactive input, use the non-interactive mode:
+>   ```bash
+>   ./run.sh --no-prompts
+>   ```
+> - For help with additional options:
+>   ```bash
+>   ./run.sh --help
+>   ```
+> These options automatically load the smallest, most efficient model configuration.
 
-# Run the container
-docker run -it --rm \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/logs:/app/logs \
-  ouro
-```
+## 🛠️ Using Ouro
 
-## 💡 Usage
+Ouro's interface will walk you through these steps:
 
-After starting Ouro, the interactive interface will guide you through:
+1. **Choose a Model**: Select from Small, Medium, Large, or Very Large based on your computer's capabilities
+2. **Add Documents**: Use the `ingest` command to add files to your knowledge base
+3. **Ask Questions**: Type your questions and get AI-generated answers based on your documents
 
-1. **Hugging Face Authentication**: Connect with your Hugging Face account
-2. **Model Selection**: Choose from Small, Medium, Large, or Very Large configurations
-3. **Knowledge Base Creation**: Add documents to your local database
-4. **Querying**: Ask questions and receive contextual answers
+### Commands You Can Use
 
-### Command Reference
-
-| Command | Description |
+| Command | What It Does |
 |---------|-------------|
-| `help` | Display available commands |
-| `ingest <file_path>` | Add a document to your knowledge base |
-| `ingest_dir <directory>` | Add all documents in a directory |
-| `ingest_text` | Add text content directly |
-| `models` | Show available model configurations |
-| `change_model` | Switch to a different model configuration |
-| `exit` | Quit Ouro |
+| `help` | Shows all available commands |
+| `ingest <file_path>` | Adds a document to your knowledge base |
+| `ingest_dir <directory>` | Adds all documents from a folder |
+| `models` | Shows available AI models |
+| `change_model` | Switches to a different model |
+| `exit` | Closes Ouro |
 
-### Model Configurations
+### Model Options
 
-Ouro offers four pre-configured model setups to match your needs:
+Choose the right model for your computer:
 
-| Size | LLM Model | Embedding | Description |
-|------|-----------|-----------|-------------|
-| Small | TinyLlama-1.1B-Chat | MiniLM-L6-v2 | Fast, lightweight (2GB RAM) |
-| Medium | Phi-2 | MPNet | Good balance of quality and speed (4GB RAM) |
-| Large | Flan-T5-Large | MPNet | High quality responses (6GB RAM) |
-| Very Large | Mistral-7B | BGE-Large | Best quality, requires 16GB+ RAM |
+| Size | Description | RAM Needed |
+|------|-------------|------------|
+| Small | Fast, basic responses | 2-4GB |
+| Medium | Good balance of quality and speed | 4-6GB |
+| Large | Higher quality responses | 6-8GB |
+| Very Large | Best quality, slower | 12-16GB+ |
 
-You can also specify a custom model from Hugging Face if you prefer.
+## 📋 Common Questions
 
-## 🏗️ Architecture
+### How do I add documents?
 
-Ouro follows a modular design with five core components:
-
-1. **Document Processor**: Handles file ingestion and smart chunking
-2. **Embedding Engine**: Creates vector representations of documents
-3. **Vector Store**: Efficiently indexes and retrieves document chunks
-4. **Local LLM**: Generates answers using retrieved context
-5. **Interface**: Manages user interaction with real-time progress tracking
-
-<p align="center">
-  <img src="docs/architecture.png" alt="Ouro Architecture" width="650"/>
-</p>
-
-## 🔒 Privacy Considerations
-
-- All data processing occurs locally on your machine
-- No data is sent to remote servers for processing
-- Model downloads are the only network activity
-- Logs are stored locally and can be deleted any time
-
-## 🛠️ Advanced Usage
-
-### Environment Variables
-
-You can configure Ouro with environment variables:
-
+Type `ingest` followed by the path to your file:
 ```
-OURO_DEFAULT_SIZE=Medium  # Default model size (Small, Medium, Large, Very Large)
-OURO_DATA_DIR=/path/to/custom/data  # Custom data directory
+ingest /path/to/your/document.pdf
 ```
 
-### Hugging Face Authentication
-
-To use Ouro, you need to authenticate with Hugging Face:
-
-1. Create a Hugging Face account at https://huggingface.co/join if you don't have one
-2. Generate an access token at https://huggingface.co/settings/tokens
-3. When prompted by Ouro, enter your token
-
-### Development
-
-```bash
-# Run tests
-./test.sh
-
-# Clean environment (remove venv, cached models, etc.)
-./reset.sh
-
-# Install in development mode
-pip install -e .
+Or add an entire folder:
+```
+ingest_dir /path/to/your/documents
 ```
 
-## 🔍 Troubleshooting
+### What file types are supported?
 
-| Issue | Solution |
-|-------|----------|
-| Memory errors | Try a smaller model configuration |
-| Slow performance | Use the Small or Medium configuration |
-| Model download issues | Verify Hugging Face login and internet connection |
-| "Model not found" error | Ensure you're using a valid Hugging Face model path |
+- Text files (.txt)
+- PDF documents (.pdf)
+- Markdown files (.md)
+- And more!
+
+### Where is my data stored?
+
+All data stays on your computer in the `data` folder:
+- Documents: `data/documents/`
+- Models: `data/models/`
+- Vector database: `data/vector_store/`
+
+### Is an internet connection required?
+
+Internet is only needed for the initial model download. After that, Ouro works offline.
+
+## 🔧 Troubleshooting
+
+### Application crashes or runs out of memory
+
+- Choose a smaller model (use Small or Medium)
+- Close other applications to free up memory
+- See [GUIDE.md](GUIDE.md) for more troubleshooting tips
+
+### Can't download models
+
+- Check your Hugging Face login (see [GUIDE.md](GUIDE.md))
+- Verify your internet connection
+- Ensure you have enough disk space
+
+## 📚 Learn More
+
+- [How Ouro Works](docs/architecture.txt): Technical details about the system
+- [Troubleshooting Guide](GUIDE.md#3-troubleshooting): Solutions to common issues
+- [Project Wiki](https://github.com/roBlock/ouro/wiki): Additional documentation
 
 ## 📜 License
 
 [MIT License](LICENSE)
 
-## 🙏 Acknowledgements
-
-- [Hugging Face](https://huggingface.co/) for open-source models
-- [LangChain](https://github.com/langchain-ai/langchain) for RAG components
-- [FAISS](https://github.com/facebookresearch/faiss) for vector search
-- [Rich](https://github.com/Textualize/rich) for terminal UI
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ---
 
-Created by [roBlock](https://github.com/roBlock) • [Report Bug](https://github.com/roBlock/ouro/issues)
+Created with ❤️ by [roBlock](https://github.com/roBlock)

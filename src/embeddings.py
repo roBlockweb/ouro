@@ -8,7 +8,14 @@ from pathlib import Path
 
 import numpy as np
 import faiss
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# Use the updated langchain-huggingface package instead of deprecated one
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    # Fallback to community version if not installed
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, SpinnerColumn

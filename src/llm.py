@@ -7,6 +7,11 @@ from typing import List, Dict, Any, Optional, Callable, Tuple
 from pathlib import Path
 
 import torch
+try:
+    import accelerate  # Import for memory optimization
+except ImportError:
+    pass  # Will fall back to basic loading if not available
+
 from transformers import (
     AutoModelForCausalLM, 
     AutoModelForSeq2SeqLM,
@@ -73,53 +78,103 @@ class LocalLLM:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             
-            # Determine device
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            
+            # Determine device - with Python 3.13 compatibility workarounds
+            try:
+                # First check if CUDA is available
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                
+                # On Mac, try to use MPS (Metal Performance Shaders) if available
+                if device == "cpu" and torch.backends.mps.is_available() and torch.backends.mps.is_built():
+                    device = "mps"
+                    logger.info("Using MPS (Metal) device on macOS")
+            except:
+                # Fallback to CPU if any detection issues
+                device = "cpu"
+                logger.info("Falling back to CPU due to device detection issues")
+                
+            # For safety, set lower precision to reduce memory usage
+            model_dtype = torch.float16 if device in ["cuda", "mps"] else torch.float32
+                
             # Progress update
             if self.progress_callback:
                 self.progress_callback(f"Downloading model weights on {device}...", 0.3)
             
+            # Add safety flags to prevent memory issues on Python 3.13
+            extra_model_kwargs = {
+                "cache_dir": str(MODEL_CACHE_DIR),
+                "torch_dtype": model_dtype,
+                "low_cpu_mem_usage": True,  # Enable memory optimization
+            }
+            
+            # Add device mapping for non-CPU devices
+            if device != "cpu":
+                extra_model_kwargs["device_map"] = "auto"
+            
             # Load the appropriate model class based on architecture
-            if self.is_seq2seq:
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(
-                    model_name_or_path,
-                    cache_dir=str(MODEL_CACHE_DIR),
-                    torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-                    device_map="auto" if device == "cuda" else None
-                )
-                logger.info(f"Loaded Seq2Seq model {model_name_or_path} on {device}")
+            try:
+                if self.is_seq2seq:
+                    self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                        model_name_or_path,
+                        **extra_model_kwargs
+                    )
+                    logger.info(f"Loaded Seq2Seq model {model_name_or_path} on {device}")
+                    
+                    # Progress update
+                    if self.progress_callback:
+                        self.progress_callback("Creating inference pipeline...", 0.8)
+                    
+                    # Create text generation pipeline with reduced batch size
+                    self.pipeline = pipeline(
+                        "text2text-generation",
+                        model=self.model,
+                        tokenizer=self.tokenizer,
+                        device=device,
+                    )
+                else:
+                    # For causal LMs, also add safetensors loading to avoid memory issues
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        model_name_or_path,
+                        **extra_model_kwargs
+                    )
+                    logger.info(f"Loaded Causal LM model {model_name_or_path} on {device}")
+                    
+                    # Progress update
+                    if self.progress_callback:
+                        self.progress_callback("Creating inference pipeline...", 0.8)
+                    
+                    # Create text generation pipeline with reduced batch size
+                    self.pipeline = pipeline(
+                        "text-generation",
+                        model=self.model,
+                        tokenizer=self.tokenizer,
+                        device=device,
+                    )
+            except Exception as loading_error:
+                # If loading fails with advanced options, try with minimal options
+                logger.warning(f"Error loading model with advanced options: {str(loading_error)}")
+                logger.info("Attempting to load model with minimal options...")
                 
-                # Progress update
                 if self.progress_callback:
-                    self.progress_callback("Creating inference pipeline...", 0.8)
+                    self.progress_callback("Retrying with minimal settings...", 0.4)
                 
-                # Create text generation pipeline
+                if self.is_seq2seq:
+                    self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                        model_name_or_path,
+                        cache_dir=str(MODEL_CACHE_DIR)
+                    )
+                else:
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        model_name_or_path,
+                        cache_dir=str(MODEL_CACHE_DIR)
+                    )
+                
+                # Create basic pipeline
+                pipeline_type = "text2text-generation" if self.is_seq2seq else "text-generation"
                 self.pipeline = pipeline(
-                    "text2text-generation",
+                    pipeline_type,
                     model=self.model,
                     tokenizer=self.tokenizer,
-                    device=0 if device == "cuda" else -1,
-                )
-            else:
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    model_name_or_path,
-                    cache_dir=str(MODEL_CACHE_DIR),
-                    torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-                    device_map="auto" if device == "cuda" else None
-                )
-                logger.info(f"Loaded Causal LM model {model_name_or_path} on {device}")
-                
-                # Progress update
-                if self.progress_callback:
-                    self.progress_callback("Creating inference pipeline...", 0.8)
-                
-                # Create text generation pipeline
-                self.pipeline = pipeline(
-                    "text-generation",
-                    model=self.model,
-                    tokenizer=self.tokenizer,
-                    device=0 if device == "cuda" else -1,
+                    device=-1,  # Force CPU
                 )
             
             logger.info(f"Successfully loaded model and created pipeline")
@@ -156,8 +211,7 @@ class LocalLLM:
             
             # Format the prompt differently based on model type
             if self.is_seq2seq:
-                prompt = f"""
-Context information:
+                prompt = f"""Context information:
 {context_text}
 
 {SYSTEM_PROMPT}
@@ -166,8 +220,7 @@ User question: {query}
 
 Answer:"""
             else:
-                prompt = f"""
-Context information:
+                prompt = f"""Context information:
 {context_text}
 
 {SYSTEM_PROMPT}
@@ -193,8 +246,26 @@ Ouro:"""
             if self.is_seq2seq:
                 response = outputs[0]["generated_text"]
             else:
-                # For causal models, extract only the newly generated text
-                response = outputs[0]["generated_text"][len(prompt):]
+                # For causal models, use a more robust method to extract the response
+                full_text = outputs[0]["generated_text"]
+                
+                # Extract text after the last "Ouro:" marker
+                marker = "Ouro:"
+                if marker in full_text:
+                    response = full_text.split(marker)[-1].strip()
+                else:
+                    # Fallback approach: try to extract the part after the prompt
+                    # This accounts for whitespace differences in the prompt vs. output
+                    last_user_marker = f"User: {query}"
+                    if last_user_marker in full_text:
+                        parts = full_text.split(last_user_marker, 1)
+                        if len(parts) > 1 and marker in parts[1]:
+                            response = parts[1].split(marker, 1)[1].strip()
+                        else:
+                            # If we can't find the markers, just return the generated text
+                            response = full_text
+                    else:
+                        response = full_text
                 
                 # If the response contains a generated "User:" prompt, trim it
                 if "User:" in response:
@@ -234,7 +305,7 @@ def get_custom_model_template() -> Dict[str, Any]:
 
 def login_huggingface(token: Optional[str] = None) -> bool:
     """
-    Log in to Hugging Face Hub
+    Log in to Hugging Face Hub with robust error handling
     
     Args:
         token: Hugging Face token (will prompt if None)
@@ -243,15 +314,43 @@ def login_huggingface(token: Optional[str] = None) -> bool:
         True if login successful, False otherwise
     """
     try:
+        # First check if we already have a token in cache
+        from huggingface_hub import HfFolder
+        
         if token:
-            login(token=token, write_permission=True)
-        else:
-            login(write_permission=True)
-        logger.info("Successfully logged in to Hugging Face Hub")
-        return True
+            # Use provided token
+            login(token=token, write_permission=False)
+            logger.info("Successfully logged in to Hugging Face Hub with provided token")
+            return True
+        
+        # Check if a token is already saved
+        existing_token = HfFolder.get_token()
+        if existing_token is not None and len(existing_token) > 0:
+            try:
+                # Try using the existing token
+                login(token=existing_token, write_permission=False)
+                logger.info("Successfully logged in with existing Hugging Face token")
+                return True
+            except Exception as token_error:
+                logger.warning(f"Existing token invalid: {str(token_error)}")
+        
+        # Try interactive login as last resort
+        try:
+            login(write_permission=False)
+            logger.info("Successfully logged in to Hugging Face Hub")
+            return True
+        except Exception as e:
+            logger.error(f"Failed interactive login: {str(e)}")
+        
+        # If we get here, all login attempts failed
+        logger.warning("Continuing without Hugging Face login")
+        logger.warning("Some models might not be available, but cached models should work")
+        return True  # Return True to continue with reduced functionality
+        
     except Exception as e:
-        logger.error(f"Error logging in to Hugging Face Hub: {str(e)}")
-        return False
+        logger.error(f"Error in Hugging Face authentication: {str(e)}")
+        logger.warning("Continuing without authentication")
+        return True  # Return True to continue with reduced functionality
 
 def get_huggingface_login_instructions() -> str:
     """

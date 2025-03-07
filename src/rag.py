@@ -246,6 +246,10 @@ class OuroRAG:
             # Extract content from retrieved documents
             context_texts = [doc.page_content for doc in retrieved_docs]
             
+            # If no relevant documents were found, provide an empty context with a note
+            if not context_texts:
+                context_texts = ["[No relevant information found in the knowledge base.]"]
+            
             # Update search progress
             if search_progress_callback:
                 search_progress_callback(f"Found {len(retrieved_docs)} relevant document chunks", 1.0)
