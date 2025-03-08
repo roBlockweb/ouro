@@ -3,6 +3,7 @@ Main CLI interface for the Ouro RAG system
 """
 import os
 import sys
+import time
 import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
@@ -30,7 +31,11 @@ from src.config import (
     DEFAULT_EMBEDDING_MODEL,
     MODEL_CONFIGURATIONS,
     EMBEDDING_MODELS,
-    DEFAULT_SIZE
+    DEFAULT_SIZE,
+    DEFAULT_QUANTIZE,
+    DEFAULT_FAST_MODE,
+    DEFAULT_MEMORY_TURNS,
+    DEFAULT_SAVE_CONVERSATIONS
 )
 
 # Initialize rich console
@@ -55,11 +60,23 @@ def print_help():
     [bold]Available Commands:[/bold]
     
     [bold cyan]help[/bold cyan] - Display this help message
+    
+    [bold]Document Management:[/bold]
     [bold cyan]ingest <file_path>[/bold cyan] - Add a document to your knowledge base
     [bold cyan]ingest_dir <directory_path>[/bold cyan] - Add all documents from a directory
     [bold cyan]ingest_text[/bold cyan] - Enter text content directly to add to your knowledge base
+    
+    [bold]Performance & Configuration:[/bold]
     [bold cyan]models[/bold cyan] - Show available model configurations
     [bold cyan]change_model[/bold cyan] - Switch to a different model configuration
+    [bold cyan]fast_mode[/bold cyan] - Toggle faster response generation
+    [bold cyan]system_info[/bold cyan] - Display system information and current settings
+    
+    [bold]Memory & Learning:[/bold]
+    [bold cyan]clear_memory[/bold cyan] - Clear current conversation history
+    [bold cyan]learn[/bold cyan] - Process and learn from past conversations
+    [bold cyan]toggle_history[/bold cyan] - Toggle conversation history usage
+    
     [bold cyan]exit[/bold cyan] - Exit Ouro
     
     [bold]For questions, simply type your query and press Enter.[/bold]
@@ -141,11 +158,16 @@ def display_model_options():
     table.add_column("Description", style="white")
     
     for i, (size, config) in enumerate(model_configs.items(), 1):
+        # Format the display name for better readability
+        display_name = size
+        if size == "M1Optimized":
+            display_name = "M1 Optimized"
+            
         embedding_size = config["embedding"]
         embedding_model = EMBEDDING_MODELS[embedding_size]
         table.add_row(
             str(i),
-            size,
+            display_name,
             config["llm"],
             f"{embedding_size} ({embedding_model.split('/')[-1]})",
             config["description"]
@@ -277,12 +299,16 @@ def select_model(preset_model: str = None) -> Tuple[str, Dict[str, Any]]:
         config = model_configs[size]
         return config["llm"], config
 
-def initialize_system(preset_model: str = None) -> OuroRAG:
+def initialize_system(preset_model: str = None, 
+                   fast_mode: bool = None,
+                   memory_turns: int = None) -> OuroRAG:
     """
-    Initialize the RAG system with progress tracking
+    Initialize the RAG system with progress tracking and performance optimizations
     
     Args:
         preset_model: Optional model size to use, bypassing interactive selection
+        fast_mode: Whether to use faster generation settings
+        memory_turns: Number of conversation turns to keep in memory
     
     Returns:
         Initialized OuroRAG instance
@@ -299,21 +325,35 @@ def initialize_system(preset_model: str = None) -> OuroRAG:
     # Get embedding model from the config
     embedding_model_name = EMBEDDING_MODELS[model_config["embedding"]]
     
+    # Set optimization parameters (either from args or config)
+    quantize = model_config.get("quantize", DEFAULT_QUANTIZE)
+    fast_mode = fast_mode if fast_mode is not None else model_config.get("fast_mode", DEFAULT_FAST_MODE)
+    memory_turns = memory_turns if memory_turns is not None else model_config.get("memory_turns", DEFAULT_MEMORY_TURNS)
+    save_conversations = model_config.get("save_conversations", DEFAULT_SAVE_CONVERSATIONS)
+    
     console.print(f"\n[bold]Initializing Ouro with:[/bold]")
     console.print(f"  • Language model: [blue]{model_path}[/blue]")
     console.print(f"  • Embedding model: [yellow]{embedding_model_name}[/yellow]")
+    console.print(f"  • Optimizations: [green]{'Quantization ' if quantize else ''}{'Fast mode ' if fast_mode else ''}[/green]")
+    console.print(f"  • Memory: [cyan]{memory_turns} conversation turns[/cyan]")
     
     # Initialize embedding system with progress tracking
     embedding_manager = load_embedding_with_progress(embedding_model_name)
     
-    # Initialize LLM with progress tracking
-    llm, _ = load_model_with_progress(model_path)
+    # Initialize LLM with progress tracking and optimizations
+    llm, _ = load_model_with_progress(
+        model_path, 
+        quantize=quantize,
+        fast_mode=fast_mode
+    )
     
     # Create RAG system with the initialized components
     rag_system = OuroRAG(
         embedding_manager=embedding_manager,
         llm=llm,
-        config=model_config
+        config=model_config,
+        memory_turns=memory_turns,
+        save_conversations=save_conversations
     )
     
     console.print("[bold green]✓[/bold green] Ouro initialized successfully! You can now ask questions or ingest documents.")
@@ -460,9 +500,120 @@ def handle_models():
     """Display available model configurations"""
     display_model_options()
 
+def handle_system_info(rag_system: OuroRAG):
+    """Display system information and current settings"""
+    import platform
+    import torch
+    
+    # Get system information
+    system_info = {
+        "os": platform.system(),
+        "os_version": platform.version(),
+        "python": platform.python_version(),
+        "torch": torch.__version__,
+        "processor": platform.processor(),
+    }
+    
+    # Check if running on Apple Silicon
+    is_apple_silicon = False
+    if system_info["os"] == "Darwin" and hasattr(torch.backends, "mps"):
+        is_apple_silicon = True
+        system_info["mps_available"] = torch.backends.mps.is_available() and torch.backends.mps.is_built()
+    
+    # Get current model configuration
+    model_config = rag_system.config
+    
+    # Create the system info panel
+    table = Table(title="System Information")
+    table.add_column("Component", style="cyan")
+    table.add_column("Value", style="green")
+    
+    # Add system rows
+    table.add_row("Operating System", f"{system_info['os']} {system_info['os_version']}")
+    table.add_row("Python Version", system_info['python'])
+    table.add_row("PyTorch Version", system_info['torch'])
+    if is_apple_silicon:
+        table.add_row("Apple Silicon", "Yes")
+        table.add_row("MPS Available", str(system_info.get('mps_available', False)))
+    
+    # Add divider
+    table.add_row("", "")
+    
+    # Add model configuration rows
+    table.add_row("Current Model", rag_system.llm.model_name)
+    table.add_row("Embedding Model", rag_system.embedding_manager.model_name)
+    table.add_row("Fast Mode", "Enabled" if hasattr(rag_system.llm, 'fast_mode') and rag_system.llm.fast_mode else "Disabled")
+    table.add_row("Memory Turns", str(rag_system.conversation_memory.max_turns))
+    table.add_row("Save Conversations", str(rag_system.conversation_memory.save_conversations))
+    
+    console.print(table)
+
+def handle_fast_mode(rag_system: OuroRAG):
+    """Toggle fast mode for generation"""
+    if not hasattr(rag_system.llm, 'fast_mode'):
+        rag_system.llm.fast_mode = False
+    
+    # Toggle the mode
+    rag_system.llm.fast_mode = not rag_system.llm.fast_mode
+    
+    if rag_system.llm.fast_mode:
+        console.print("[bold green]Fast mode enabled.[/bold green] Responses will be generated more quickly but may be less detailed.")
+    else:
+        console.print("[bold green]Fast mode disabled.[/bold green] Responses will be more detailed but may take longer to generate.")
+
+def handle_clear_memory(rag_system: OuroRAG):
+    """Clear conversation memory"""
+    rag_system.clear_conversation()
+    console.print("[bold green]✓[/bold green] Conversation memory cleared.")
+
+def handle_toggle_history(rag_system: OuroRAG):
+    """Toggle usage of conversation history"""
+    # We'll use a config setting in the RAG system to track this
+    if not hasattr(rag_system, 'use_conversation_history'):
+        rag_system.use_conversation_history = True
+    
+    # Toggle the setting
+    rag_system.use_conversation_history = not rag_system.use_conversation_history
+    
+    if rag_system.use_conversation_history:
+        console.print("[bold green]Conversation history enabled.[/bold green] Ouro will remember previous interactions.")
+    else:
+        console.print("[bold green]Conversation history disabled.[/bold green] Each query will be treated independently.")
+
+def handle_learn(rag_system: OuroRAG):
+    """Process and learn from past conversations"""
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold green]{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task("[green]Learning from past conversations...", total=100)
+            
+            def update_progress(message, percent):
+                if percent < 0:  # Error
+                    progress.update(task, description=f"[bold red]{message}")
+                    return
+                
+                progress.update(
+                    task, 
+                    description=f"[bold green]{message}",
+                    completed=int(percent * 100)
+                )
+            
+            rag_system.learn_from_conversations(progress_callback=update_progress)
+        
+        console.print("[bold green]✓[/bold green] Learning process completed. New insights added to knowledge base.")
+    except Exception as e:
+        console.print(f"[red]Error during learning process: {str(e)}[/red]")
+
 def handle_query(rag_system: OuroRAG, query: str) -> None:
     """Handle a user query with a progress indicator"""
     try:
+        # Record the start time for performance measurement
+        start_time = time.time()
+        
         with Progress(
             SpinnerColumn(),
             TextColumn("[bold green]{task.description}"),
@@ -486,19 +637,32 @@ def handle_query(rag_system: OuroRAG, query: str) -> None:
                 if generation_task is not None:
                     progress.update(generation_task, completed=int(progress_percent * 100))
             
-            # Execute query with progress tracking
+            # Execute query with progress tracking, respecting conversation history setting
+            use_history = True
+            if hasattr(rag_system, 'use_conversation_history'):
+                use_history = rag_system.use_conversation_history
+                
             response = rag_system.query(
                 query, 
                 search_progress_callback=search_progress_callback,
-                generation_progress_callback=generation_progress_callback
+                generation_progress_callback=generation_progress_callback,
+                use_conversation_history=use_history
             )
         
-        # Print the response in a panel
-        console.print(Panel(response, title="Ouro's Response", border_style="green"))
+        # Calculate total response time
+        total_time = time.time() - start_time
+        
+        # Print the response in a panel with timing info
+        console.print(Panel(
+            response, 
+            title="Ouro's Response", 
+            subtitle=f"Generated in {total_time:.2f} seconds",
+            border_style="green"
+        ))
     
     except Exception as e:
         console.print(f"[red]Error processing query: {str(e)}[/red]")
-        console.print("[yellow]For better performance, try using the Small model with './run.sh --small'[/yellow]")
+        console.print("[yellow]For better performance, try using the Small model or enabling fast mode with 'fast_mode'[/yellow]")
 
 def ensure_directories_exist():
     """Make sure all necessary directories exist"""
@@ -546,13 +710,40 @@ def main():
     parser = argparse.ArgumentParser(description="Ouro - Privacy-First Local RAG System")
     parser.add_argument("--ingest", help="Ingest a document before starting the interactive mode")
     parser.add_argument("--ingest-dir", help="Ingest all documents in a directory before starting")
-    parser.add_argument("--model", choices=["Small", "Medium", "Large", "Very Large"], 
-                       help="Specify the model size to use (bypasses interactive selection)")
+    
+    # Model and performance options
+    all_model_choices = list(MODEL_CONFIGURATIONS.keys())
+    parser.add_argument("--model", choices=all_model_choices, 
+                       help=f"Specify the model size to use: {', '.join(all_model_choices)}")
+    parser.add_argument("--fast", action="store_true", help="Enable fast mode for quicker responses")
+    parser.add_argument("--no-history", action="store_true", help="Disable conversation history")
+    parser.add_argument("--memory-turns", type=int, help="Number of conversation turns to remember")
+    
     args = parser.parse_args()
     
-    # Initialize the system
+    # Initialize the system with parsed options
     try:
-        rag_system = initialize_system(preset_model=args.model)
+        # Convert command line args to initialization parameters
+        fast_mode = args.fast if hasattr(args, 'fast') and args.fast is not None else None
+        memory_turns = args.memory_turns if hasattr(args, 'memory_turns') and args.memory_turns is not None else None
+        
+        # Initialize the system
+        rag_system = initialize_system(
+            preset_model=args.model,
+            fast_mode=fast_mode,
+            memory_turns=memory_turns
+        )
+        
+        # Apply any additional settings
+        if hasattr(args, 'no_history') and args.no_history:
+            # Initialize use_conversation_history attribute if not present
+            if not hasattr(rag_system, 'use_conversation_history'):
+                rag_system.use_conversation_history = True
+                
+            # Disable conversation history
+            rag_system.use_conversation_history = False
+            console.print("[bold yellow]Note:[/bold yellow] Conversation history is disabled.")
+            
     except KeyboardInterrupt:
         console.print("\n[bold yellow]Setup interrupted. Exiting Ouro.[/bold yellow]")
         console.print("Please run again when you're ready to complete the setup.")
@@ -592,6 +783,7 @@ def main():
             elif command.lower() == "help":
                 print_help()
             
+            # Document Management
             elif command.lower().startswith("ingest "):
                 parts = command.split(maxsplit=1)
                 handle_ingest(rag_system, [parts[1]])
@@ -603,11 +795,28 @@ def main():
             elif command.lower() == "ingest_text":
                 handle_ingest_text(rag_system)
             
+            # Performance & Configuration
             elif command.lower() == "models":
                 handle_models()
             
             elif command.lower() == "change_model":
                 handle_change_model(rag_system)
+                
+            elif command.lower() == "fast_mode":
+                handle_fast_mode(rag_system)
+                
+            elif command.lower() == "system_info":
+                handle_system_info(rag_system)
+            
+            # Memory & Learning
+            elif command.lower() == "clear_memory":
+                handle_clear_memory(rag_system)
+                
+            elif command.lower() == "learn":
+                handle_learn(rag_system)
+                
+            elif command.lower() == "toggle_history":
+                handle_toggle_history(rag_system)
             
             else:
                 # Treat as a query

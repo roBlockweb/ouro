@@ -11,11 +11,12 @@ Ouro is a fully offline RAG (Retrieval-Augmented Generation) system that runs co
 Think of Ouro as a private AI assistant that helps you find information in your documents:
 
 - **100% Private**: Everything runs on your computer - no data is sent to the cloud
-- **Easy to Use**: Simple interface that guides you through each step
-- **Flexible**: Works with different models based on your computer's capabilities
+- **Apple Silicon Optimized**: Special optimizations for M1/M2 Macs for much faster inference
+- **Performance Focused**: Quantization, fast mode, and hardware acceleration for better speeds
+- **Conversation Memory**: Remembers context from previous questions for more natural interactions
+- **Adaptive Learning**: Can learn from past conversations to improve future responses
 - **Multi-Format**: Process text files, PDFs, and Markdown documents
-- **Reliable**: Built-in timeouts and robust error handling prevent hanging
-- **Intuitive**: Clear UI with user/assistant distinction and helpful prompts
+- **Rich Terminal UI**: Clear, intuitive interface with timing information and progress indicators
 
 ## 🚀 Getting Started
 
@@ -48,50 +49,64 @@ python -m src.main
 
 That's it! The application will guide you through the rest of the process.
 
-> **Tips**: 
-> - If you encounter memory issues, use the small model preset:
+> **Performance Tips**: 
+> - **Apple Silicon (M1/M2)**: Use the M1-optimized mode for best performance:
+>   ```bash
+>   ./run.sh --m1
+>   ```
+> - **Memory issues**: Use the small model preset:
 >   ```bash
 >   ./run.sh --small
 >   ```
-> - If you have problems with interactive input, use the non-interactive mode:
+> - **Faster responses**: Enable fast mode:
+>   ```bash
+>   ./run.sh --fast
+>   ```
+> - **Non-interactive usage**:
 >   ```bash
 >   ./run.sh --no-prompts
 >   ```
-> - For help with additional options:
+> - **More options**:
 >   ```bash
 >   ./run.sh --help
 >   ```
-> These options automatically load the smallest, most efficient model configuration.
 
 ## 🛠️ Using Ouro
 
 Ouro's interface will walk you through these steps:
 
-1. **Choose a Model**: Select from Small, Medium, Large, or Very Large based on your computer's capabilities
+1. **Choose a Model**: Select from Small, Medium, Large, or M1 Optimized based on your computer
 2. **Add Documents**: Use the `ingest` command to add files to your knowledge base
 3. **Ask Questions**: Type your questions and get AI-generated answers based on your documents
 
 ### Commands You Can Use
 
-| Command | What It Does |
-|---------|-------------|
-| `help` | Shows all available commands |
-| `ingest <file_path>` | Adds a document to your knowledge base |
-| `ingest_dir <directory>` | Adds all documents from a folder |
-| `models` | Shows available AI models |
-| `change_model` | Switches to a different model |
-| `exit` | Closes Ouro |
+| Command Group | Command | What It Does |
+|---------------|---------|-------------|
+| **Help** | `help` | Shows all available commands |
+| **Document Management** | `ingest <file_path>` | Adds a document to your knowledge base |
+| | `ingest_dir <directory>` | Adds all documents from a folder |
+| | `ingest_text` | Enter text directly to add to knowledge base |
+| **Performance & Config** | `models` | Shows available AI models |
+| | `change_model` | Switches to a different model |
+| | `fast_mode` | Toggles faster response generation |
+| | `system_info` | Displays system information and settings |
+| **Memory & Learning** | `clear_memory` | Clears current conversation history |
+| | `learn` | Processes and learns from past conversations |
+| | `toggle_history` | Toggles conversation history usage |
+| **Exit** | `exit` | Closes Ouro |
 
 ### Model Options
 
 Choose the right model for your computer:
 
-| Size | Description | RAM Needed |
-|------|-------------|------------|
-| Small | Fast, basic responses | 2-4GB |
-| Medium | Good balance of quality and speed | 4-6GB |
-| Large | Higher quality responses | 6-8GB |
-| Very Large | Best quality, slower | 12-16GB+ |
+| Size | Description | RAM Needed | Notes |
+|------|-------------|------------|-------|
+| Small | Fast, basic responses | 2-4GB | Good for any system |
+| Medium | Good quality and speed | 4-6GB | Default for most systems |
+| M1Optimized | Optimized for Apple Silicon | 4-6GB | Best for M1/M2 Macs |
+| Large | Higher quality responses | 8-10GB | For complex questions |
+| Very Large | Best quality, slower | 12-16GB+ | For high-end systems |
 
 ## 📋 Common Questions
 

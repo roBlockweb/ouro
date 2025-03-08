@@ -1,5 +1,5 @@
 """
-Local LLM functionality for inference
+Local LLM functionality for inference with optimizations for Apple Silicon and quantization support
 """
 import os
 import time
@@ -12,11 +12,26 @@ try:
 except ImportError:
     pass  # Will fall back to basic loading if not available
 
+# Import quantization support
+try:
+    import bitsandbytes as bnb
+    # Verify bitsandbytes has GPU support
+    if hasattr(bnb, 'cadam32bit_grad_fp32'):
+        HAS_BITSANDBYTES = True
+    else:
+        HAS_BITSANDBYTES = False
+        # Don't show the GPU warning repeatedly
+        import warnings
+        warnings.filterwarnings('ignore', message='The installed version of bitsandbytes was compiled without GPU support')
+except ImportError:
+    HAS_BITSANDBYTES = False  # Will fall back to standard precision
+
 from transformers import (
     AutoModelForCausalLM, 
     AutoModelForSeq2SeqLM,
     AutoTokenizer, 
-    pipeline
+    pipeline,
+    BitsAndBytesConfig
 )
 from huggingface_hub import login
 from tqdm import tqdm
@@ -45,17 +60,21 @@ class LocalLLM:
         if model_name_or_path:
             self.load_model(model_name_or_path)
     
-    def load_model(self, model_name_or_path: str, progress_callback: Callable = None) -> None:
+    def load_model(self, model_name_or_path: str, progress_callback: Callable = None, 
+                  quantize: bool = False, fast_mode: bool = False) -> None:
         """
-        Load a language model from Hugging Face with progress tracking
+        Load a language model from Hugging Face with optimizations for performance
         
         Args:
             model_name_or_path: Hugging Face model name or path
             progress_callback: Optional callback for progress updates
+            quantize: Whether to load in quantized mode (4-bit or 8-bit)
+            fast_mode: Whether to use faster inference settings
         """
         logger.info(f"Loading LLM: {model_name_or_path}")
         self.model_name = model_name_or_path
         self.progress_callback = progress_callback
+        self.fast_mode = fast_mode
         
         try:
             # Determine if model is a seq2seq model based on common naming patterns
@@ -78,39 +97,64 @@ class LocalLLM:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             
-            # Determine device - with Python 3.13 compatibility workarounds
+            # Determine device - with improved M1/M2 detection
             try:
                 # First check if CUDA is available
-                device = "cuda" if torch.cuda.is_available() else "cpu"
-                
-                # On Mac, try to use MPS (Metal Performance Shaders) if available
-                if device == "cpu" and torch.backends.mps.is_available() and torch.backends.mps.is_built():
+                if torch.cuda.is_available():
+                    device = "cuda"
+                    logger.info("Using CUDA device")
+                # Then check for MPS (Apple Silicon)
+                elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
                     device = "mps"
                     logger.info("Using MPS (Metal) device on macOS")
-            except:
+                # Fallback to CPU
+                else:
+                    device = "cpu"
+                    logger.info("Using CPU device")
+            except Exception as device_error:
                 # Fallback to CPU if any detection issues
                 device = "cpu"
-                logger.info("Falling back to CPU due to device detection issues")
-                
-            # For safety, set lower precision to reduce memory usage
+                logger.info(f"Falling back to CPU due to device detection issues: {str(device_error)}")
+            
+            # Determine quantization and precision
+            # Only enable quantization on CUDA with confirmed bitsandbytes support
+            use_quantization = quantize and HAS_BITSANDBYTES and device == "cuda"
             model_dtype = torch.float16 if device in ["cuda", "mps"] else torch.float32
                 
             # Progress update
             if self.progress_callback:
-                self.progress_callback(f"Downloading model weights on {device}...", 0.3)
+                quant_message = " with quantization" if use_quantization else ""
+                self.progress_callback(f"Downloading model weights on {device}{quant_message}...", 0.3)
+            
+            # Set up quantization config if applicable
+            quantization_config = None
+            if use_quantization:
+                logger.info("Using 4-bit quantization with bitsandbytes")
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=True
+                )
             
             # Add safety flags to prevent memory issues on Python 3.13
             extra_model_kwargs = {
                 "cache_dir": str(MODEL_CACHE_DIR),
-                "torch_dtype": model_dtype,
                 "low_cpu_mem_usage": True,  # Enable memory optimization
             }
             
             # Add device mapping for non-CPU devices
             if device != "cpu":
                 extra_model_kwargs["device_map"] = "auto"
+                
+            # Add quantization config if available
+            if quantization_config:
+                extra_model_kwargs["quantization_config"] = quantization_config
+            else:
+                # Use halffloat precision when not quantizing (for efficiency)
+                extra_model_kwargs["torch_dtype"] = model_dtype
             
-            # Load the appropriate model class based on architecture
+            # Try to load with optimized settings
             try:
                 if self.is_seq2seq:
                     self.model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -121,9 +165,9 @@ class LocalLLM:
                     
                     # Progress update
                     if self.progress_callback:
-                        self.progress_callback("Creating inference pipeline...", 0.8)
+                        self.progress_callback("Creating optimized inference pipeline...", 0.8)
                     
-                    # Create text generation pipeline with reduced batch size
+                    # Create text generation pipeline with optimized settings
                     self.pipeline = pipeline(
                         "text2text-generation",
                         model=self.model,
@@ -131,7 +175,7 @@ class LocalLLM:
                         device=device,
                     )
                 else:
-                    # For causal LMs, also add safetensors loading to avoid memory issues
+                    # For causal LMs
                     self.model = AutoModelForCausalLM.from_pretrained(
                         model_name_or_path,
                         **extra_model_kwargs
@@ -140,9 +184,9 @@ class LocalLLM:
                     
                     # Progress update
                     if self.progress_callback:
-                        self.progress_callback("Creating inference pipeline...", 0.8)
+                        self.progress_callback("Creating optimized inference pipeline...", 0.8)
                     
-                    # Create text generation pipeline with reduced batch size
+                    # Create text generation pipeline with optimized settings
                     self.pipeline = pipeline(
                         "text-generation",
                         model=self.model,
@@ -151,12 +195,13 @@ class LocalLLM:
                     )
             except Exception as loading_error:
                 # If loading fails with advanced options, try with minimal options
-                logger.warning(f"Error loading model with advanced options: {str(loading_error)}")
+                logger.warning(f"Error loading model with optimized options: {str(loading_error)}")
                 logger.info("Attempting to load model with minimal options...")
                 
                 if self.progress_callback:
-                    self.progress_callback("Retrying with minimal settings...", 0.4)
+                    self.progress_callback("Retrying with basic settings...", 0.4)
                 
+                # Fall back to CPU and no quantization
                 if self.is_seq2seq:
                     self.model = AutoModelForSeq2SeqLM.from_pretrained(
                         model_name_or_path,
@@ -168,7 +213,7 @@ class LocalLLM:
                         cache_dir=str(MODEL_CACHE_DIR)
                     )
                 
-                # Create basic pipeline
+                # Create basic pipeline on CPU
                 pipeline_type = "text2text-generation" if self.is_seq2seq else "text-generation"
                 self.pipeline = pipeline(
                     pipeline_type,
@@ -178,6 +223,12 @@ class LocalLLM:
                 )
             
             logger.info(f"Successfully loaded model and created pipeline")
+            
+            # Apply MPS optimizations for Apple Silicon if applicable
+            if device == "mps":
+                logger.info("Applying Apple Silicon (M1/M2) optimizations")
+                # Enable faster transformer implementation when available
+                os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
             
             # Final progress update
             if self.progress_callback:
@@ -189,13 +240,15 @@ class LocalLLM:
                 self.progress_callback(f"Error: {str(e)}", -1.0)  # Negative progress indicates error
             raise
     
-    def generate_with_retrieval(self, query: str, context_docs: List[str]) -> str:
+    def generate_with_retrieval(self, query: str, context_docs: List[str], 
+                             conversation_history: List[Dict[str, str]] = None) -> str:
         """
-        Generate a response to a query with retrieved context
+        Generate a response to a query with retrieved context and conversation history
         
         Args:
             query: User query
             context_docs: List of retrieved document content
+            conversation_history: Optional list of previous conversation turns
             
         Returns:
             Generated response string
@@ -209,13 +262,23 @@ class LocalLLM:
             # Combine context documents into a single string
             context_text = "\n\n".join(context_docs)
             
+            # Format conversation history if provided
+            conv_history_formatted = ""
+            if conversation_history and len(conversation_history) > 0:
+                history_pairs = []
+                for turn in conversation_history:
+                    if 'user' in turn and 'assistant' in turn:
+                        history_pairs.append(f"User: {turn['user']}\nOuro: {turn['assistant']}")
+                if history_pairs:
+                    conv_history_formatted = "\n\n" + "\n\n".join(history_pairs) + "\n\n"
+            
             # Format the prompt differently based on model type
             if self.is_seq2seq:
                 prompt = f"""Context information:
 {context_text}
 
 {SYSTEM_PROMPT}
-
+{conv_history_formatted}
 User question: {query}
 
 Answer:"""
@@ -224,23 +287,39 @@ Answer:"""
 {context_text}
 
 {SYSTEM_PROMPT}
-
+{conv_history_formatted}
 User: {query}
 Ouro:"""
             
-            # Generate response using the pipeline
-            generation_kwargs = {
-                "max_new_tokens": 512,
-                "do_sample": True,
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "top_k": 50,
-                "repetition_penalty": 1.1,
-                "num_return_sequences": 1,
-            }
+            # Determine generation parameters based on mode
+            if hasattr(self, 'fast_mode') and self.fast_mode:
+                # Faster but potentially lower quality generation
+                generation_kwargs = {
+                    "max_new_tokens": 256,  # Shorter response cap
+                    "do_sample": True,
+                    "temperature": 0.7,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "repetition_penalty": 1.1,
+                    "num_return_sequences": 1,
+                }
+            else:
+                # Standard generation parameters (higher quality)
+                generation_kwargs = {
+                    "max_new_tokens": 512,
+                    "do_sample": True,
+                    "temperature": 0.7,
+                    "top_p": 0.95,
+                    "top_k": 50,
+                    "repetition_penalty": 1.1,
+                    "num_return_sequences": 1,
+                }
             
             # Generate the response
+            start_time = time.time()
             outputs = self.pipeline(prompt, **generation_kwargs)
+            generation_time = time.time() - start_time
+            logger.info(f"Generation completed in {generation_time:.2f} seconds")
             
             # Extract the generated text
             if self.is_seq2seq:
@@ -380,13 +459,17 @@ This allows Ouro to download models from Hugging Face Hub.
 """
 
 def load_model_with_progress(model_path: str, 
-                            with_console_progress: bool = True) -> Tuple[LocalLLM, Dict[str, Any]]:
+                            with_console_progress: bool = True,
+                            quantize: bool = False,
+                            fast_mode: bool = False) -> Tuple[LocalLLM, Dict[str, Any]]:
     """
-    Load a model with progress display
+    Load a model with progress display and performance optimizations
     
     Args:
         model_path: Path to Hugging Face model
         with_console_progress: Whether to display progress in console
+        quantize: Whether to use quantization for the model (4-bit)
+        fast_mode: Whether to use faster inference settings
         
     Returns:
         Tuple of (LocalLLM instance, model config dict)
@@ -413,17 +496,23 @@ def load_model_with_progress(model_path: str,
                 )
             
             llm = LocalLLM()
-            llm.load_model(model_path, progress_callback=update_progress)
+            llm.load_model(model_path, 
+                          progress_callback=update_progress,
+                          quantize=quantize,
+                          fast_mode=fast_mode)
     else:
-        llm = LocalLLM(model_path)
+        llm = LocalLLM()
+        llm.load_model(model_path, quantize=quantize, fast_mode=fast_mode)
     
-    # Return the model and a basic config
+    # Return the model and a config with optimization flags
     config = {
         "llm": model_path,
         "description": "Custom model",
         "chunk_size": 1000,
         "chunk_overlap": 200,
-        "top_k": 4
+        "top_k": 4,
+        "quantize": quantize,
+        "fast_mode": fast_mode
     }
     
     return llm, config

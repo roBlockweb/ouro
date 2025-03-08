@@ -13,3 +13,6 @@ pypdf>=3.12.1
 rich>=13.4.2
 accelerate>=0.26.0
 safetensors>=0.4.0
+bitsandbytes>=0.41.0  # Optional: For quantization (not compatible with MPS)
+optimum>=1.13.0  # Optional: For advanced optimization
+einops>=0.6.0  # Needed for some optimized models
