@@ -2,9 +2,9 @@
 
 This guide will help you set up all the prerequisites needed to run Ouro, the privacy-first local RAG system.
 
-## 1. Hugging Face Setup (Required)
+## 1. Hugging Face Setup (Recommended)
 
-Ouro requires a Hugging Face account to download language models. Follow these simple steps:
+While Ouro will work without Hugging Face authentication, logging in is **highly recommended** for better model access and to avoid download rate limits. Follow these simple steps:
 
 ### Create a Hugging Face Account
 
@@ -126,11 +126,13 @@ Solution: Ouro will install this for you when you run it. If you want to install
 pip install huggingface_hub
 ```
 
-### Issue: Authentication Error
+### Issue: Model Download Failures
 
 Solution: 
+- While Ouro will now run without Hugging Face authentication, you may encounter download issues without logging in.
 - Verify you used the correct token from https://huggingface.co/settings/tokens
 - Try logging in manually: `huggingface-cli login`
+- Some models require explicit acceptance of terms on the Hugging Face website
 - Check your internet connection
 
 ### Issue: Application Crashes or Runs Out of Memory

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Ouro</h1>
+            <p>Privacy-First Local RAG System</p>
+        </header>
+
+        <main>
+            <div class="chat-section">
+                <div class="chat-container" id="chat-container">
+                    <div class="welcome-message">
+                        <h2>Welcome to Ouro</h2>
+                        <p>Your privacy-focused local RAG system. Ask questions about your documents or use the settings panel to configure the system.</p>
+                    </div>
+                    <div id="chat-messages"></div>
+                </div>
+                
+                <div class="query-container">
+                    <form id="query-form">
+                        <input type="text" id="query-input" placeholder="Ask a question..." required>
+                        <button type="submit">Send</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Settings</h3>
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label for="model-select">Model</label>
+                            <select id="model-select" name="model_name">
+                                {% for model in models %}
+                                <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>{{ model }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="top-k">Top K Results</label>
+                            <input type="number" id="top-k" name="top_k" value="4" min="1" max="20">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max-tokens">Max New Tokens</label>
+                            <input type="number" id="max-tokens" name="max_new_tokens" value="512" min="64" max="2048">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="temperature">Temperature</label>
+                            <input type="range" id="temperature" name="temperature" min="0" max="1" step="0.05" value="0.1">
+                            <span id="temperature-value">0.1</span>
+                        </div>
+                        
+                        <button type="submit">Apply Settings</button>
+                    </form>
+                    
+                    <div class="form-group memory-controls">
+                        <button id="clear-memory-btn">Clear Conversation Memory</button>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Document Ingestion</h3>
+                    <form id="file-upload-form">
+                        <div class="form-group">
+                            <label for="file-upload">Upload File</label>
+                            <input type="file" id="file-upload" name="file">
+                        </div>
+                        <button type="submit">Upload & Ingest</button>
+                    </form>
+                    
+                    <form id="text-ingest-form">
+                        <div class="form-group">
+                            <label for="text-ingest">Ingest Text</label>
+                            <textarea id="text-ingest" name="text" placeholder="Paste text to ingest..."></textarea>
+                        </div>
+                        <button type="submit">Ingest Text</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

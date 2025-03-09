@@ -43,7 +43,20 @@ data/documents/*.md
 !data/documents/.gitkeep
 logs/*
 !logs/.gitkeep
+ouro/logs/*
+!ouro/logs/.gitkeep
+ouro/data/models/*
+!ouro/data/models/.gitkeep
+ouro/data/vector_store/*
+!ouro/data/vector_store/.gitkeep
+ouro/data/documents/*.txt
+ouro/data/documents/*.pdf
+ouro/data/documents/*.md
+!ouro/data/documents/.gitkeep
+ouro/data/conversations/*.jsonl
+!ouro/data/conversations/.gitkeep
 .requirements_installed
+.installed
 test_*.py
 
 # Operating System

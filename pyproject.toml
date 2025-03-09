@@ -1,34 +1,51 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ouro"
-version = "0.1.0"
-description = "Ouro: Offline RAG System"
+version = "1.0.0"
+description = "Privacy-First Local RAG System"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "roBlock"}
+    {name = "Ouro Team"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
-    "transformers>=4.28.0",
-    "sentence-transformers>=2.2.2",
-    "faiss-cpu>=1.7.4",
-    "langchain>=0.0.267",
-    "langchain-community>=0.0.6",
-    "langchain-text-splitters>=0.0.1",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
     "huggingface_hub>=0.16.4",
-    "tqdm>=4.65.0",
-    "numpy>=1.24.3",
-    "pypdf>=3.12.1",
+    "langchain>=0.0.267",
+    "langchain-core>=0.1.0",
+    "faiss-cpu>=1.7.4",
+    "sentence-transformers>=2.2.2",
     "rich>=13.4.2",
+    "tqdm>=4.65.0",
+    "PyPDF2>=3.0.1",
+    "unstructured>=0.10.0",
+    "accelerate>=0.22.0",
+    "bitsandbytes>=0.41.0; platform_system != 'Darwin'",
+    "safetensors>=0.3.2",
+    # Web interface dependencies
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "jinja2>=3.1.2",
+    "python-multipart>=0.0.6",
+    "asyncio>=3.4.3",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/roBlock/ouro"
-"Bug Tracker" = "https://github.com/roBlock/ouro/issues"
+"Homepage" = "https://github.com/roBlockweb/ouro"
+"Bug Tracker" = "https://github.com/roBlockweb/ouro/issues"
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["ouro"]
+
+[project.scripts]
+ouro = "ouro.main:main"
