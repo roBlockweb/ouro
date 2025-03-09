@@ -34,7 +34,7 @@ logger = get_logger()
 app = FastAPI(
     title="Ouro RAG",
     description="Privacy-First Local RAG System",
-    version="1.0.2"
+    version="1.0.3"
 )
 
 # Get the directory where templates and static files are located
@@ -199,16 +199,38 @@ async def clear_memory():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API models specifically for the API endpoints
+class APIQueryRequest(BaseModel):
+    request: str  # This matches what the client is sending
+
 # API routes if enabled
 if API_ENABLED:
     # API route for querying
     @app.post(f"{API_PREFIX}/query")
-    async def api_query(query_request: QueryRequest):
-        """API endpoint for querying the RAG system."""
+    async def api_query(query_request: APIQueryRequest = None, query_request_legacy: QueryRequest = None):
+        """API endpoint for querying the RAG system.
+        Supports both the new 'request' field and the legacy 'query' field for backwards compatibility.
+        """
+        # Determine which request format was used
+        query_text = None
+        use_history = True
+        
+        if query_request and hasattr(query_request, 'request'):
+            # New format using 'request' field
+            query_text = query_request.request
+        elif query_request_legacy and hasattr(query_request_legacy, 'query'):
+            # Legacy format using 'query' field
+            query_text = query_request_legacy.query
+            use_history = query_request_legacy.use_history
+        else:
+            # If we have a JSON body but neither field is present
+            raise HTTPException(status_code=400, detail="Missing 'request' or 'query' field in request body")
+        
+        # Generate response
         response = ""
         for token in rag.generate(
-            query=query_request.query,
-            with_history=query_request.use_history,
+            query=query_text,
+            with_history=use_history,
             stream=False
         ):
             response += token
@@ -217,9 +239,9 @@ if API_ENABLED:
         response = rag.clean_response(response)
         
         return {
-            "query": query_request.query,
+            "query": query_text,
             "response": response,
-            "with_history": query_request.use_history
+            "with_history": use_history
         }
     
     # API route for ingestion
