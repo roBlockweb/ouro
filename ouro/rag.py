@@ -3,6 +3,7 @@ Core RAG system functionality for Ouro.
 """
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Generator, Union
@@ -122,18 +123,45 @@ class OuroRAG:
         return contexts
     
     def clean_response(self, response: str) -> str:
-        """Clean the response of any conversation formatting artifacts."""
-        # Remove "Assistant:" prefix if it appears at the beginning
+        """Aggressively clean the response of any conversation artifacts or hallucinations."""
+        # Step 1: Remove any "Assistant:" prefix
         if response.lstrip().startswith("Assistant:"):
             response = response.lstrip()[len("Assistant:"):].lstrip()
         
-        # Remove any fictional conversation examples
+        # Step 2: If there's a "User:" anywhere, extract only the content before it
         if "User:" in response:
-            # This could be a fake conversation sample - try to extract just the initial answer
-            parts = response.split("User:")
-            if parts and parts[0].strip():
-                response = parts[0].strip()
+            parts = response.split("User:", 1)
+            response = parts[0].strip()
         
+        # Step 3: Also handle lowercase variants
+        if "user:" in response:
+            parts = response.split("user:", 1)
+            response = parts[0].strip()
+        
+        # Step 4: Remove any lines that look like dialogue
+        lines = response.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            if not any(dialogue_marker in line.lower() for dialogue_marker in ["user:", "assistant:", "human:", "ai:", "question:", "answer:"]):
+                cleaned_lines.append(line)
+        
+        response = '\n'.join(cleaned_lines)
+        
+        # Step 5: If the response still has problematic patterns (e.g., Q&A format), take drastic measures
+        if re.search(r'^\s*(?:Q|Question)[\s\d]*:', response, re.MULTILINE) or re.search(r'^\s*(?:A|Answer)[\s\d]*:', response, re.MULTILINE):
+            # Extract the first paragraph as a fallback
+            paragraphs = [p for p in response.split('\n\n') if p.strip()]
+            if paragraphs:
+                response = paragraphs[0].strip()
+                # If the first paragraph is short, include the second one too
+                if len(paragraphs) > 1 and len(response) < 100:
+                    response = f"{response}\n\n{paragraphs[1].strip()}"
+        
+        # Final check: if the response is empty after all cleaning, provide a default
+        if not response.strip():
+            response = "I understand your question. Let me provide a direct answer without examples."
+        
+        logger.debug(f"Cleaned response: {response[:100]}{'...' if len(response) > 100 else ''}")
         return response
 
     def generate(self, query: str, with_history: bool = True, stream: bool = True) -> Generator[str, None, None]:

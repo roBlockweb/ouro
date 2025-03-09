@@ -34,7 +34,7 @@ logger = get_logger()
 app = FastAPI(
     title="Ouro RAG",
     description="Privacy-First Local RAG System",
-    version="1.0.1"
+    version="1.0.2"
 )
 
 # Get the directory where templates and static files are located
@@ -252,6 +252,22 @@ def find_available_port(start_port, max_attempts=10):
             return port
     return None
 
+def open_browser(host, port):
+    """Open the web browser to the specified URL."""
+    import webbrowser
+    import threading
+    import time
+    
+    def _open_browser():
+        # Wait a bit to make sure the server is up
+        time.sleep(1.5)
+        url = f"http://{host}:{port}"
+        logger.info(f"Opening browser at {url}")
+        webbrowser.open(url)
+    
+    # Start browser in a new thread to avoid blocking
+    threading.Thread(target=_open_browser, daemon=True).start()
+
 def start_web_server():
     """Start the web server with automatic port selection if default is in use."""
     port = WEB_PORT
@@ -263,11 +279,17 @@ def start_web_server():
             logger.error(f"Could not find an available port after {10} attempts")
             print(f"❌ Could not start web server: all ports from {WEB_PORT} to {WEB_PORT + 10} are in use")
             return False
-        
-    logger.info(f"Starting web server on http://{WEB_HOST}:{port}")
-    print(f"✅ Starting web interface at http://{WEB_HOST}:{port}")
+    
+    # Set up message and browser opening
+    url = f"http://{WEB_HOST}:{port}"
+    logger.info(f"Starting web server on {url}")
+    print(f"✅ Starting web interface at {url}")
+    
+    # Open browser in a separate thread
+    open_browser(WEB_HOST, port)
     
     try:
+        # Start the server
         uvicorn.run(app, host=WEB_HOST, port=port)
         return True
     except Exception as e:

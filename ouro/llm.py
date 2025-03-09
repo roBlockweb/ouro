@@ -156,18 +156,23 @@ class LocalLLM:
         history_str = ""
         if history:
             for turn in history:
-                history_str += f"User: {turn['user']}\nAssistant: {turn['assistant']}\n\n"
+                history_str += f"Previous User Message: {turn['user']}\nYour Previous Response: {turn['assistant']}\n\n"
         
-        # Build the full prompt
+        # Build the full prompt with very explicit instructions
         full_prompt = f"""
 {system_prompt}
+
+IMPORTANT INSTRUCTION: Always respond directly to the user. Do NOT create fictional dialogues, sample questions, or example conversations.
 
 Knowledge Base:
 {context_str}
 
+Previous Conversation Context:
 {history_str}
-User: {query}
-Assistant:"""
+
+Current User Message: {query}
+
+Your Response:"""
         
         return full_prompt.strip()
     
