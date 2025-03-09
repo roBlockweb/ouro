@@ -34,7 +34,7 @@ logger = get_logger()
 app = FastAPI(
     title="Ouro RAG",
     description="Privacy-First Local RAG System",
-    version="1.0.3"
+    version="1.0.4"
 )
 
 # Get the directory where templates and static files are located
@@ -87,13 +87,22 @@ async def index(request):
 
 
 @app.post("/query")
-async def query(query_request: QueryRequest):
-    """Query the RAG system."""
+async def query(query_request: dict):
+    """Query the RAG system.
+    This endpoint accepts a more flexible format to support the web UI.
+    """
+    # Extract query parameters from the request
+    query_text = query_request.get('query', '')
+    use_history = query_request.get('use_history', True)
+    
+    if not query_text:
+        raise HTTPException(status_code=400, detail="Missing 'query' field in request")
+    
     # Create async generator for streaming response
     async def generate():
         for token in rag.generate(
-            query=query_request.query,
-            with_history=query_request.use_history,
+            query=query_text,
+            with_history=use_history,
             stream=True
         ):
             yield token + " "  # Add space for better streaming display
