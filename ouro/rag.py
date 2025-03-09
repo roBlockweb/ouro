@@ -110,6 +110,10 @@ class OuroRAG:
         # Set configuration
         self.system_prompt = system_prompt
         self.top_k = top_k
+        
+        # Add thread lock for concurrent operations
+        import threading
+        self._lock = threading.RLock()
     
     def get_contexts(self, query: str) -> List[str]:
         """Retrieve relevant document contexts for the query."""
@@ -117,32 +121,54 @@ class OuroRAG:
         contexts = [doc.page_content for doc in similar_docs]
         return contexts
     
+    def clean_response(self, response: str) -> str:
+        """Clean the response of any conversation formatting artifacts."""
+        # Remove "Assistant:" prefix if it appears at the beginning
+        if response.lstrip().startswith("Assistant:"):
+            response = response.lstrip()[len("Assistant:"):].lstrip()
+        
+        # Remove any fictional conversation examples
+        if "User:" in response:
+            # This could be a fake conversation sample - try to extract just the initial answer
+            parts = response.split("User:")
+            if parts and parts[0].strip():
+                response = parts[0].strip()
+        
+        return response
+
     def generate(self, query: str, with_history: bool = True, stream: bool = True) -> Generator[str, None, None]:
         """Generate a response to the query."""
-        # Retrieve relevant contexts
-        contexts = self.get_contexts(query)
-        
-        # Get conversation history if requested
-        history = self.memory.get_history(format_for_context=True) if with_history else None
-        
-        # Generate response
-        response_stream = self.llm.generate(
-            system_prompt=self.system_prompt,
-            query=query,
-            context=contexts,
-            history=history,
-            stream=stream
-        )
-        
-        # Collect the full response for memory while streaming
-        full_response = ""
-        
-        for token in response_stream:
-            full_response += token
-            yield token
-        
-        # Add to conversation memory
-        self.memory.add(query, full_response)
+        # Use a lock to prevent concurrent generation requests which could cause issues
+        with self._lock:
+            # Retrieve relevant contexts
+            logger.info(f"Searching knowledge base for: {query[:50]}...")
+            contexts = self.get_contexts(query)
+            
+            # Get conversation history if requested
+            history = self.memory.get_history(format_for_context=True) if with_history else None
+            
+            # Generate response
+            logger.info("Generating response...")
+            response_stream = self.llm.generate(
+                system_prompt=self.system_prompt,
+                query=query,
+                context=contexts,
+                history=history,
+                stream=stream
+            )
+            
+            # Collect the full response for memory while streaming
+            full_response = ""
+            
+            for token in response_stream:
+                full_response += token
+                yield token
+            
+            # Clean response before saving to memory
+            cleaned_response = self.clean_response(full_response)
+            
+            # Add to conversation memory
+            self.memory.add(query, cleaned_response)
     
     def ingest_document(self, file_path: str, show_progress: bool = True) -> int:
         """Ingest a document into the vector store."""

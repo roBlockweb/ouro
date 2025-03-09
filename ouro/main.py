@@ -48,16 +48,20 @@ def run_web_interface():
     """Run the web interface."""
     try:
         from ouro.web_ui import start_web_server
-        console.print(f"\n[bold green]Starting web interface at http://{WEB_HOST}:{WEB_PORT}[/bold green]")
-        start_web_server()
+        # The start_web_server function now handles port discovery and messaging
+        success = start_web_server()
+        if not success:
+            logger.warning("Web server failed to start, falling back to terminal interface")
+            run_terminal_interface()
     except ImportError as e:
         console.print("[bold red]Error: Web interface dependencies not installed.[/bold red]")
         console.print("Please install required packages with: pip install fastapi uvicorn jinja2")
         logger.error(f"Web interface error: {e}")
-        return
+        run_terminal_interface()
     except Exception as e:
         console.print(f"[bold red]Error starting web interface: {e}[/bold red]")
         logger.error(f"Web interface error: {e}")
+        run_terminal_interface()
 
 
 def run_terminal_interface():

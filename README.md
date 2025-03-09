@@ -1,4 +1,4 @@
-# Ouro: Privacy-First Local RAG System (v1.0.0)
+# Ouro: Privacy-First Local RAG System (v1.0.1)
 
 Ouro is a privacy-focused Retrieval-Augmented Generation (RAG) system that runs completely offline on your local machine. It allows you to interact with your documents using AI without sending data to external services.
 
@@ -13,6 +13,14 @@ Ouro is a privacy-focused Retrieval-Augmented Generation (RAG) system that runs 
 - **Minimal & User-Friendly**: Simple, intuitive operation without unnecessary complexity
 - **Local API**: Optional REST endpoints for automation with tools like n8n.io
 - **Easy Maintenance**: Simple cleanup and maintenance scripts included
+
+## What's New in v1.0.1
+
+- **Automatic Port Selection**: Web UI automatically finds an available port if the default is in use
+- **Improved Response Quality**: Fixed issue with model generating fictional conversations
+- **Thread Safety**: Added locking mechanism to prevent concurrent model usage issues
+- **Graceful Fallbacks**: Better handling when web interface can't start
+- **Bug Fixes**: Several smaller fixes for smoother operation
 
 ## What's New in v1.0.0
 

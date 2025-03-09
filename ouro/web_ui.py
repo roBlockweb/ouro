@@ -34,7 +34,7 @@ logger = get_logger()
 app = FastAPI(
     title="Ouro RAG",
     description="Privacy-First Local RAG System",
-    version="0.1.0"
+    version="1.0.1"
 )
 
 # Get the directory where templates and static files are located
@@ -213,6 +213,9 @@ if API_ENABLED:
         ):
             response += token
         
+        # Ensure response is cleaned of any conversation artifacts
+        response = rag.clean_response(response)
+        
         return {
             "query": query_request.query,
             "response": response,
@@ -235,6 +238,39 @@ if API_ENABLED:
             raise HTTPException(status_code=500, detail=str(e))
 
 
+def is_port_in_use(port):
+    """Check if a port is in use."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+def find_available_port(start_port, max_attempts=10):
+    """Find an available port starting from start_port."""
+    for port_offset in range(max_attempts):
+        port = start_port + port_offset
+        if not is_port_in_use(port):
+            return port
+    return None
+
 def start_web_server():
-    """Start the web server."""
-    uvicorn.run(app, host=WEB_HOST, port=WEB_PORT)
+    """Start the web server with automatic port selection if default is in use."""
+    port = WEB_PORT
+    
+    if is_port_in_use(port):
+        logger.warning(f"Port {port} is already in use, trying to find an available port...")
+        port = find_available_port(WEB_PORT + 1)
+        if port is None:
+            logger.error(f"Could not find an available port after {10} attempts")
+            print(f"❌ Could not start web server: all ports from {WEB_PORT} to {WEB_PORT + 10} are in use")
+            return False
+        
+    logger.info(f"Starting web server on http://{WEB_HOST}:{port}")
+    print(f"✅ Starting web interface at http://{WEB_HOST}:{port}")
+    
+    try:
+        uvicorn.run(app, host=WEB_HOST, port=port)
+        return True
+    except Exception as e:
+        logger.error(f"Error starting web server: {e}")
+        print(f"❌ Could not start web server: {e}")
+        return False
