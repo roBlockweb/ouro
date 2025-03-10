@@ -1,16 +1,18 @@
-# Ouro RAG System Architecture
+# Ouro RAG System Architecture v3.0.0
 
 ## Core Components
 
 1. **config.py**
    - Central configuration management for all settings
    - Defines paths, model configurations, and system parameters
+   - Memory and conversation settings
+   - Multiple system prompts for different interaction modes
    - Provides runtime configuration options
 
 2. **logger.py**
    - Unified logging system for all components
    - Records user queries, system operations, and errors
-   - Supports conversation history for fine-tuning
+   - Thread-safe logging setup for multi-user access
 
 3. **llm.py**
    - Manages loading and interaction with language models
@@ -21,6 +23,7 @@
    - Manages document embeddings with FAISS vector store
    - Handles similarity search for document retrieval
    - Persists embeddings to disk for reuse
+   - Supports metadata filtering for search
 
 5. **document_loader.py**
    - Loads documents from various file formats
@@ -29,52 +32,70 @@
 
 6. **rag.py**
    - Orchestrates the RAG pipeline
-   - Manages conversation memory
-   - Coordinates document retrieval and generation
+   - Manages conversation memory with persistence
+   - Supports multiple interaction modes
+   - Thread-safe retrieval and generation coordination
 
-7. **web_ui.py**
-   - Provides web interface using FastAPI
-   - Handles file uploads and settings management
-   - Exposes API endpoints for automation
+7. **api.py**
+   - Provides Python API for programmatic access
+   - Clean interface for all key functionalities
+   - Authentication support for secure access
+   - Integration with external Python applications
 
-8. **main.py**
-   - Main entry point with CLI and web interface options
+8. **agent.py**
+   - Implements agent capabilities with tools
+   - Web search, math, and summarization utilities
+   - Task planning and execution
+
+9. **main.py**
+   - Main entry point with terminal interface
+   - Command autocomplete with tab completion
    - Handles startup checks and initialization
    - Processes user commands and queries
+   - Dedicated chat mode with enhanced interactivity
 
 ## Data Flow
 
 1. **Document Ingestion**
    - Document files are loaded by document_loader.py
-   - Text is chunked into smaller segments
+   - Text is chunked into smaller segments with configurable size/overlap
    - Chunks are embedded by embeddings.py
    - Embeddings are stored in FAISS vector database
+   - Logging captures ingestion events
 
 2. **Query Processing**
-   - User query is received via terminal or web interface
+   - User query is received via terminal, web interface, or API
+   - Query is logged with appropriate context
    - Query is embedded and used for similarity search
    - Most relevant document chunks are retrieved
    - Retrieved context, conversation history, and query are combined
    - LLM generates a response based on the augmented context
+   - Response is cleaned and saved to conversation memory
 
-3. **Conversation Management**
-   - User queries and system responses are stored in memory
-   - Conversation can be saved to disk in JSONL format
-   - Past conversations can be used for fine-tuning
+3. **Memory Management**
+   - Recent conversation turns stored in memory buffer
+   - Limited to configurable turn count
+   - Thread-safe operations for concurrent access
+   - Conversation JSONL files saved to disk
+   - Memory can be cleared via API or UI
 
 ## Interfaces
 
 1. **Terminal Interface**
    - Rich-based CLI for command-driven interaction
-   - Supports all core features through text commands
-   - Provides progress indicators for operations
+   - Tab completion for slash commands
+   - Dedicated chat mode with persistent context
+   - Color-coded responses for different modes
+   - Progress indicators for long-running operations
+   - Memory and model management commands
 
-2. **Web Interface**
-   - Minimal browser-based UI at localhost:7860
-   - Chat interface with streaming responses
-   - Document upload and ingestion
-   - Settings management
-   - API endpoints for automation
+2. **Python API**
+   - Direct Python interface via ouro.api
+   - Client creation with create_ouro_client()
+   - Programmatic document and text ingestion
+   - Query handling with multiple modes
+   - Memory management functions
+   - Authentication support for secure access
 
 ## Performance Optimizations
 
@@ -92,10 +113,18 @@
 ## Security & Privacy
 
 1. **Local-Only Operation**
-   - All processing occurs locally
+   - All processing occurs locally on your machine
    - No data sent to external services
    - Requires Hugging Face account only for model downloads
 
-2. **Data Storage**
+2. **Data Storage & Management**
    - Documents and conversations stored locally
-   - Optional saving of conversation history
+   - Configurable conversation persistence
+   - Thread-safe operations for data access
+   - Structured logs with minimal sensitive information
+   - Long-term memory can be cleared when needed
+
+3. **API Security**
+   - Local-only API endpoints (not exposed to internet by default)
+   - Robust input validation
+   - Error handling without leaking implementation details

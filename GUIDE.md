@@ -1,157 +1,464 @@
-# Ouro Setup Guide
+# Ouro User Guide (v3.0.0)
 
-This guide will help you set up all the prerequisites needed to run Ouro, the privacy-first local RAG system.
+This guide provides detailed information on how to use Ouro effectively, covering both basic and advanced features.
 
-## 1. Hugging Face Setup (Recommended)
+## Table of Contents
 
-While Ouro will work without Hugging Face authentication, logging in is **highly recommended** for better model access and to avoid download rate limits. Follow these simple steps:
+1. [Getting Started](#getting-started)
+2. [Terminal Interface](#terminal-interface)
+3. [Document Management](#document-management)
+4. [Chat Capabilities](#chat-capabilities)
+5. [Agent Features](#agent-features)
+6. [Memory System](#memory-system)
+7. [API Integration](#api-integration)
+8. [Advanced Configuration](#advanced-configuration)
+9. [Troubleshooting](#troubleshooting)
 
-### Create a Hugging Face Account
+## Getting Started
 
-1. Visit [https://huggingface.co/join](https://huggingface.co/join)
-2. Sign up with your email or using GitHub/Google
-3. Verify your email address
+### Installation
 
-### Generate an Access Token
+1. **Clone the repository and navigate to the directory**:
+   ```bash
+   git clone https://github.com/roBlockWeb/ouro.git
+   cd ouro
+   ```
 
-1. Go to [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-2. Click the "New token" button
-3. Name your token (e.g., "Ouro")
-4. Select "Read" for permission level
-5. Click "Generate token"
-6. Copy your token (it starts with "hf_")
+2. **Create and activate a virtual environment**:
+   ```bash
+   python -m venv venv
+   
+   # On Windows:
+   venv\Scripts\activate
+   
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
 
-### Log in via Command Line
+3. **Install Ouro**:
+   ```bash
+   pip install -e .
+   ```
 
-Open your terminal and run:
+4. **Authenticate with Hugging Face (Recommended)**:
+   ```bash
+   huggingface-cli login
+   ```
 
+### Starting Ouro
+
+Run Ouro with default settings:
 ```bash
-huggingface-cli login
+python -m ouro
 ```
 
-When prompted, paste your token and press Enter. 
-
-If the command isn't found, Ouro will help you install it when you first run the application.
-
-## 2. System Requirements
-
-- **Python**: 3.9 or newer (3.10 or 3.11 recommended)
-- **Memory**: 
-  - Small model: 2-4GB RAM
-  - Medium model: 4-6GB RAM
-  - M1 Optimized: 4-6GB RAM (Apple Silicon only)
-  - Large model: 8-10GB RAM
-  - Very Large model: 12-16GB+ RAM
-- **Storage**: At least 5GB free space for model downloads
-
-## 3. Performance Optimization
-
-### Apple Silicon (M1/M2 Macs)
-
-Ouro includes special optimizations for Apple Silicon processors. To use them:
-
+Or specify a model size:
 ```bash
-./run.sh --m1
+python -m ouro --model small
 ```
 
-This will:
-- Use models that perform well on the MPS (Metal Performance Shaders) backend
-- Apply memory optimizations specific to M1/M2
-- Configure PyTorch for optimal Apple Silicon performance
+Available model options:
+- `small` - Smallest model, best for low-resource systems
+- `medium` - Default model, good balance of performance and resource usage
+- `large` - More capable model, requires more RAM
+- `very_large` - Most capable model, requires significant RAM
+- `m1_optimized` - Optimized for Apple Silicon Macs
+- `ollama` - Uses Ollama for inference (requires Ollama to be installed)
 
-### Faster Responses
+## Terminal Interface
 
-If you want faster responses (at the cost of some quality), use:
+Ouro provides a streamlined terminal interface with autocomplete for slash commands.
 
-```bash
-./run.sh --fast
-```
+### Available Commands
 
-Or toggle fast mode inside the application with the `fast_mode` command.
+- `/chat [topic]` - Start casual chat mode (optional topic)
+- `/ingest <file_path>` - Ingest a document
+- `/ingest_dir <directory_path>` - Ingest all documents in a directory
+- `/ingest_text` - Ingest text directly (follow prompts)
+- `/models` - List available models
+- `/change_model <model_name>` - Switch models
+- `/clear_memory` - Clear conversation history
+- `/learn` - Learn from past conversations
+- `/help` - Show help information
+- `/exit` or `/quit` - Exit the application
 
-### Memory-Constrained Systems
+### Using Tab Completion
 
-For systems with limited RAM:
+Ouro supports tab completion for slash commands. Simply:
 
-```bash
-./run.sh --small
-```
+1. Type `/` to begin a command
+2. Press the `Tab` key to see available command options or autocomplete the current command
 
-This will use the smallest model (1.1B parameters) which requires only about 2-4GB of RAM.
+### Chat Mode
 
-### Combining Optimizations
+The `/chat` command offers a dedicated chat environment:
 
-You can combine optimization flags:
+- Start with `/chat` for general conversation
+- Use `/chat topic` to start with a specific topic
+- Type `exit` or `quit` to return to command mode
+- Use limited slash commands (`/help`, `/clear_memory`, `/models`, `/change_model`) within chat mode
 
-```bash
-./run.sh --m1 --fast  # For fastest performance on Apple Silicon
-./run.sh --small --fast  # For minimum resource usage
-```
-
-## 4. Using Advanced Features
-
-### Conversation Memory
-
-Ouro remembers previous conversation turns to provide more contextual responses. You can:
-
-- Clear memory: `clear_memory` command
-- Toggle conversation history: `toggle_history` command
-- Configure memory depth: Edit `memory_turns` in config.py or use the `--memory-turns` flag
-
-### Adaptive Learning
-
-Ouro can learn from past conversations:
-
-1. Enable conversation saving with the `save_conversations` option
-2. Use the `learn` command to process saved conversations
-3. New insights will be added to your knowledge base automatically
-
-### System Information
-
-To see your current configuration and system details:
+### Example Usage
 
 ```
-system_info
+>> /ingest documents/research-paper.pdf
+✓ Ingested 15 document chunks
+
+>> What are the main findings of the research paper?
+The main findings of the research paper include...
+
+>> /chat
+Starting casual chat mode. Type 'exit' to return to command mode.
+Chat>> Tell me about yourself
+I'm Ouro, a privacy-focused AI assistant that runs completely on your local machine...
+
+Chat>> What's the weather like?
+I don't have real-time data like weather information, but I'd be happy to chat about other topics...
+
+Chat>> /clear_memory
+✓ Conversation memory cleared
+
+Chat>> exit
+Exiting chat mode.
+
+>> /change_model large
+✓ Changed model to large
+
+>> /models
+Available Models:
+- small: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+- medium: microsoft/phi-2
+- large: mistralai/Mistral-7B-v0.1
+- very_large: meta-llama/Llama-2-13b-chat-hf
+- m1_optimized: TheBloke/Llama-2-7B-Chat-GGUF
+- ollama: llama2
 ```
 
-This shows your hardware, current model, and optimization settings.
+## Document Management
 
-## 5. Troubleshooting
+Ouro can process various document types and store their content for retrieval.
 
-### Issue: "Command not found: huggingface-cli"
+### Supported File Types
 
-Solution: Ouro will install this for you when you run it. If you want to install it manually:
+- **PDF** (.pdf) - Full PDF support including text extraction
+- **Plain Text** (.txt) - Standard text files
+- **Markdown** (.md, .markdown) - Markdown formatting
+- **CSV** (.csv) - Comma-separated values
+- **HTML** (.html, .htm) - Web pages
+- **JSON** (.json) - Structured data
 
-```bash
-pip install huggingface_hub
+### Metadata
+
+You can add metadata to documents for better organization and filtering:
+
+- **source** - Where the document came from
+- **date** - When the document was created
+- **author** - Who created the document
+- **category** - Topic or category
+- **tags** - Related keywords
+- **priority** - Importance (low, medium, high)
+
+The metadata can be programmatically added via the API (see API Integration section).
+
+## Chat Capabilities
+
+Ouro provides three main modes for interaction:
+
+### Standard RAG Mode
+
+- Answers questions based on your documents
+- Maintains conversation context
+- Uses vector search to find relevant information
+- Balances accuracy with conversational ability
+
+### Casual Chat Mode
+
+- Accessed via `/chat` command
+- Focused on conversational interactions
+- More personality and engagement
+- Perfect for non-research interactions
+- Provides a dedicated chat environment
+
+### Agent Mode
+
+- Solves complex tasks using reasoning
+- Uses specialized tools when needed
+- Can search the web for up-to-date information
+- Explains reasoning process
+- Best for complex, multi-step problems
+- Access through Python API
+
+## Agent Features
+
+Agent capabilities provide enhanced tools for solving complex tasks.
+
+### Available Tools
+
+1. **Web Search**:
+   - Searches the web for current information
+   - Uses DuckDuckGo by default
+   - Retrieves and summarizes results
+
+2. **Math Tool**:
+   - Performs mathematical calculations
+   - Supports basic arithmetic operations
+   - Handles complex expressions
+
+3. **Query Generation**:
+   - Creates effective search queries
+   - Improves search results quality
+   - Extracts key terms from questions
+
+4. **Text Summarization**:
+   - Condenses long text into key points
+   - Maintains essential information
+   - Adjustable output length
+
+### Accessing Agent Features
+
+Agent features are accessible through the Python API integration (see API Integration section).
+
+## Memory System
+
+Ouro's memory system helps maintain context during conversations.
+
+### Short-Term Memory
+
+- Stores recent conversation turns
+- Helps maintain context in multi-turn dialogues
+- Configurable number of turns to remember
+- Cleared when you restart Ouro or use /clear_memory
+
+### Long-Term Memory
+
+- Stores important exchanges for future reference
+- Uses embeddings for semantic retrieval
+- Persists between sessions
+- Can be marked as important for priority
+
+### Memory Settings
+
+Configure memory behavior in `config.py`:
+```python
+# Memory settings
+MEMORY_TURNS = 10  # maximum conversation turns to keep in short-term memory
+SAVE_CONVERSATIONS = True  # save conversations to disk for later retrieval
+LONG_TERM_MEMORY = True  # enable long-term memory with embeddings
 ```
 
-### Issue: Model Download Failures
+## API Integration
 
-Solution: 
-- While Ouro will now run without Hugging Face authentication, you may encounter download issues without logging in.
-- Verify you used the correct token from https://huggingface.co/settings/tokens
-- Try logging in manually: `huggingface-cli login`
-- Some models require explicit acceptance of terms on the Hugging Face website
-- Check your internet connection
+Ouro provides a Python API for integration with other applications.
 
-### Issue: Application Crashes or Runs Out of Memory
+### Authentication
 
-Solution:
-- Choose a smaller model option (Small or Medium)
-- Close other applications to free up memory
-- Use quantization with the `quantize` option in config.py
-- Enable fast mode with `fast_mode` command or `--fast` flag
+By default, the API is accessible without authentication. To enable API key authentication:
 
-### Issue: Slow Performance on Apple Silicon
+1. Edit `config.py`:
+   ```python
+   API_KEY_REQUIRED = True
+   API_KEYS = ["your-secret-key-1", "your-secret-key-2"]
+   ```
 
-Solution:
-- Use the M1 Optimized model with `./run.sh --m1`
-- Ensure you're using PyTorch 2.0+ which includes MPS optimizations
-- Check that your model is using the MPS device with `system_info`
+2. Include the key when using the API:
+   ```python
+   from ouro.api import create_ouro_client
+   
+   client = create_ouro_client(api_key="your-secret-key-1")
+   response = client.query("What is RAG?")
+   ```
 
-## Next Steps
+### API Functionality
 
-Once you've completed these setup steps, return to the README.md for instructions on how to run Ouro.
+The API provides the following capabilities:
 
-Happy querying!
+- **Querying**: Get responses to questions
+- **Text Ingestion**: Add text to the knowledge base
+- **Document Ingestion**: Process and add documents
+- **Memory Management**: Clear or retrieve conversation memory
+- **Model Management**: Change active models
+- **Token Counting**: Count tokens in text
+- **System Statistics**: Get information about the system
+
+### Integration Examples
+
+#### Python Client
+```python
+from ouro.api import create_ouro_client
+
+# Create client
+client = create_ouro_client(model_name="medium")
+
+# Simple query
+response = client.query("What is RAG?")
+print(response["response"])
+
+# Ingest text
+result = client.ingest_text(
+    text="RAG stands for Retrieval Augmented Generation, a technique that enhances LLM responses with retrieved knowledge.",
+    metadata={"source": "definition", "category": "ai_concepts"}
+)
+print(f"Ingested {result['ingested_documents']} chunks")
+
+# Get system stats
+stats = client.get_stats()
+print(f"Document count: {stats['document_count']}")
+print(f"Current model: {stats['model']['name']}")
+```
+
+### Using External Tools with the API
+
+You can use standard Python libraries alongside the Ouro API:
+
+```python
+import os
+from ouro.api import create_ouro_client
+
+# Create client
+client = create_ouro_client()
+
+# Process all files in a directory
+dir_path = "/path/to/documents"
+for filename in os.listdir(dir_path):
+    if filename.endswith(".pdf") or filename.endswith(".txt"):
+        file_path = os.path.join(dir_path, filename)
+        result = client.ingest_document(
+            file_path=file_path,
+            metadata={"source": f"collection_{os.path.basename(dir_path)}"}
+        )
+        print(f"Ingested {result['ingested_documents']} chunks from {filename}")
+```
+
+## Advanced Configuration
+
+For advanced users, Ouro offers extensive configuration options.
+
+### Model Configuration
+
+Modify or add models in `config.py`:
+```python
+MODELS = {
+    "custom_model": {
+        "name": "custom_model",
+        "llm_model": "path/to/your/model",
+        "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+        "chunk_size": 500,
+        "chunk_overlap": 50,
+        "memory_turns": 10,
+        "quantize": True,
+        "use_mps": False,
+        "max_new_tokens": 512,
+        "temperature": 0.2,
+    },
+    # ... other models
+}
+```
+
+### Vector Database Options
+
+Configure vector database settings:
+```python
+VECTOR_DB_TYPE = "faiss"  # Options: "faiss", "qdrant", "chroma"
+DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+```
+
+### System Prompt Customization
+
+Edit the system prompts to change the assistant's behavior:
+
+```python
+# Standard RAG mode prompt
+SYSTEM_PROMPT = """
+You are Ouro, a helpful AI assistant powered by a local language model.
+...
+"""
+
+# Agent mode prompt
+AGENT_SYSTEM_PROMPT = """
+You are Ouro, an advanced AI agent capable of solving complex tasks using reasoning and tools.
+...
+"""
+
+# Casual chat mode prompt
+CHAT_SYSTEM_PROMPT = """
+You are Ouro, a friendly and helpful AI assistant designed for casual conversation.
+...
+"""
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Model Download Issues
+- Authenticate with Hugging Face using `huggingface-cli login`
+- Check internet connection
+- Verify disk space
+- Some models require accepting terms on the Hugging Face website
+
+#### Out of Memory Errors
+- Use a smaller model: `python -m ouro --model small`
+- Reduce `max_new_tokens` in config.py
+- Close other memory-intensive applications
+
+#### Tab Completion Not Working
+- Tab completion is only available on Unix-like systems (Linux, macOS)
+- Make sure you're using the latest version of Python with readline support
+- Try using the `/help` command to see available commands
+
+#### Web Search Not Working
+1. Check internet connection
+2. Verify ENABLE_WEB_SEARCH is True in config.py
+3. Ensure the web search provider is accessible
+
+### Getting Help
+
+If you encounter issues:
+1. Check the logs in the `logs/` directory
+2. Look for error messages in the terminal output
+3. Submit an issue on GitHub with detailed information about the problem
+
+## Upgrading Ouro
+
+To upgrade to a new version:
+
+1. Backup your data:
+   ```bash
+   cp -r data/ data_backup/
+   ```
+
+2. Pull the latest version:
+   ```bash
+   git pull origin main
+   ```
+
+3. Reinstall dependencies:
+   ```bash
+   pip install -e .
+   ```
+
+4. Restart Ouro:
+   ```bash
+   python -m ouro
+   ```
+
+## FAQ
+
+**Q: Can Ouro work completely offline?**
+A: Yes, once models are downloaded, Ouro works entirely offline, except for web search features.
+
+**Q: How much disk space do I need?**
+A: Around 10GB is recommended for models and vector database.
+
+**Q: Can I use my own custom models?**
+A: Yes, add them to the MODELS configuration in config.py.
+
+**Q: Is my data secure and private?**
+A: Yes, all data stays on your machine and is never sent to external services, except during web searches.
+
+**Q: What's the difference between standard mode and chat mode?**
+A: Standard mode is focused on answering questions using your documents, while chat mode is more conversational and personality-focused.
+
+**Q: Can Ouro be used commercially?**
+A: Yes, Ouro is released under the MIT license, but check the licenses of the underlying models you use as they may have different restrictions.

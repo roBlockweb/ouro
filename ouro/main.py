@@ -3,13 +3,10 @@ Main entry point for Ouro RAG system.
 """
 import os
 import sys
-import time
-import asyncio
 import platform
+import readline
 from pathlib import Path
-if platform.system() == "Windows":
-    import msvcrt
-import importlib.util
+import traceback
 
 from rich.console import Console
 from rich.panel import Panel
@@ -21,10 +18,7 @@ from rich import box
 
 from ouro.config import (
     DEFAULT_MODEL, 
-    MODELS, 
-    WEB_HOST, 
-    WEB_PORT, 
-    WEB_TIMEOUT,
+    MODELS,
     ROOT_DIR
 )
 from ouro.llm import check_hf_login
@@ -34,38 +28,41 @@ from ouro.logger import get_logger
 logger = get_logger()
 console = Console()
 
+# Define all available slash commands for auto-completion
+SLASH_COMMANDS = [
+    "/chat", 
+    "/ingest", 
+    "/ingest_dir", 
+    "/ingest_text", 
+    "/models", 
+    "/change_model", 
+    "/clear_memory", 
+    "/learn", 
+    "/help", 
+    "/exit", 
+    "/quit"
+]
 
-def check_web_dependencies() -> bool:
-    """Check if web interface dependencies are installed."""
-    required_modules = ["fastapi", "uvicorn", "jinja2"]
-    for module in required_modules:
-        if importlib.util.find_spec(module) is None:
-            return False
-    return True
-
-
-def run_web_interface():
-    """Run the web interface."""
-    try:
-        from ouro.web_ui import start_web_server
-        # The start_web_server function now handles port discovery and messaging
-        success = start_web_server()
-        if not success:
-            logger.warning("Web server failed to start, falling back to terminal interface")
-            run_terminal_interface()
-    except ImportError as e:
-        console.print("[bold red]Error: Web interface dependencies not installed.[/bold red]")
-        console.print("Please install required packages with: pip install fastapi uvicorn jinja2")
-        logger.error(f"Web interface error: {e}")
-        run_terminal_interface()
-    except Exception as e:
-        console.print(f"[bold red]Error starting web interface: {e}[/bold red]")
-        logger.error(f"Web interface error: {e}")
-        run_terminal_interface()
+def completer(text, state):
+    """Command autocomplete function for readline."""
+    # Get current input text
+    buffer = readline.get_line_buffer()
+    
+    # Only provide suggestions for slash commands
+    if buffer.startswith("/"):
+        options = [cmd for cmd in SLASH_COMMANDS if cmd.startswith(buffer)]
+        if state < len(options):
+            return options[state]
+    return None
 
 
 def run_terminal_interface():
     """Run the terminal interface."""
+    # Set up command auto-completion
+    if platform.system() != "Windows":  # readline not available on Windows
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer(completer)
+    
     # Initialize the RAG system
     with Progress(
         transient=True,
@@ -103,6 +100,35 @@ def run_terminal_interface():
                 
                 if command == "help":
                     show_help()
+                
+                elif command == "chat":
+                    # Chat mode with a topic
+                    if args:
+                        topic = " ".join(args)
+                        console.print(f"[cyan]Starting casual chat about: {topic}[/cyan]")
+                        # Process as a query using the topic with chat mode
+                        process_query(rag, topic, mode="chat")
+                    else:
+                        console.print("[cyan]Starting casual chat mode. Type 'exit' to return to command mode.[/cyan]")
+                        # Enter interactive chat mode
+                        while True:
+                            chat_input = Prompt.ask("[bold green]Chat>>[/bold green]").strip()
+                            if chat_input.lower() in ["exit", "quit", "/exit", "/quit"]:
+                                console.print("[cyan]Exiting chat mode.[/cyan]")
+                                break
+                            
+                            # Check if user entered a slash command
+                            if chat_input.startswith("/"):
+                                # Extract command
+                                chat_command = chat_input[1:].split(" ")[0]
+                                chat_args = chat_input[1:].split(" ")[1:] if len(chat_input[1:].split(" ")) > 1 else []
+                                
+                                # Process command within chat
+                                process_command(rag, chat_command, chat_args)
+                                continue
+                            
+                            # Process as regular chat message with chat mode
+                            process_query(rag, chat_input, mode="chat")
                 
                 elif command == "ingest":
                     if not args:
@@ -216,44 +242,12 @@ def run_terminal_interface():
                     console.print(f"[bold red]Unknown command: {command}[/bold red]")
                     console.print("[yellow]Type /help to see available commands[/yellow]")
             
-            # Process query
+            # Process query (non-command input)
             else:
                 if not user_input:
                     continue
                 
-                with Progress(
-                    "{task.description}",
-                    transient=True
-                ) as progress:
-                    # Step 1: Search for relevant documents
-                    search_task = progress.add_task("[cyan]Searching knowledge base...", total=1)
-                    contexts = rag.get_contexts(user_input)
-                    progress.update(search_task, completed=1)
-                    
-                    # Step 2: Generate response
-                    gen_task = progress.add_task("[cyan]Generating response...", total=1)
-                    
-                    # Get initial part of response to display progress
-                    response_parts = []
-                    response_generator = rag.generate(user_input)
-                    for i, token in enumerate(response_generator):
-                        response_parts.append(token)
-                        if i == 5:  # After getting a few tokens, update progress
-                            progress.update(gen_task, completed=0.3)
-                        elif i == 15:
-                            progress.update(gen_task, completed=0.6)
-                        elif i == 30:
-                            progress.update(gen_task, completed=0.9)
-                    
-                    progress.update(gen_task, completed=1)
-                
-                # Display the response
-                response = "".join(response_parts)
-                console.print(Panel(
-                    Markdown(response),
-                    border_style="green",
-                    box=box.ROUNDED
-                ))
+                process_query(rag, user_input)
         
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation interrupted. Type /exit to quit.[/yellow]")
@@ -261,7 +255,105 @@ def run_terminal_interface():
         except Exception as e:
             console.print(f"[bold red]Error: {e}[/bold red]")
             logger.error(f"Error in terminal interface: {e}")
+            logger.error(traceback.format_exc())
             continue
+
+
+def process_command(rag, command, args):
+    """Process a command within chat mode."""
+    if command == "help":
+        show_help()
+    elif command == "clear_memory":
+        rag.clear_memory()
+        console.print("[green]Conversation memory cleared[/green]")
+    elif command == "models":
+        list_models()
+    elif command == "change_model":
+        if not args:
+            console.print("[yellow]Usage: /change_model <model_name>[/yellow]")
+            console.print("[yellow]Available models: small, medium, large, very_large, m1_optimized[/yellow]")
+            return
+        
+        model_name = args[0]
+        if model_name not in MODELS:
+            console.print(f"[bold red]Error: Unknown model {model_name}[/bold red]")
+            console.print("[yellow]Available models: small, medium, large, very_large, m1_optimized[/yellow]")
+            return
+        
+        with Progress(transient=True) as progress:
+            task = progress.add_task(f"[cyan]Changing model to {model_name}...", total=1)
+            try:
+                rag.change_model(model_name)
+                progress.update(task, completed=1)
+                console.print(f"[green]Changed model to {model_name}[/green]")
+            except Exception as e:
+                progress.stop()
+                console.print(f"[bold red]Error changing model: {e}[/bold red]")
+    else:
+        console.print(f"[yellow]Command '/{command}' not available in chat mode. Use 'exit' to return to main mode.[/yellow]")
+
+
+def process_query(rag, user_input, mode="standard"):
+    """Process a user query and display the response.
+    
+    Args:
+        rag: The RAG system instance
+        user_input: The user's query
+        mode: The generation mode ("standard", "chat", or "agent")
+    """
+    if not user_input:
+        return
+    
+    with Progress(
+        "{task.description}",
+        transient=True
+    ) as progress:
+        # Step 1: Search for relevant documents
+        search_task = progress.add_task("[cyan]Searching knowledge base...", total=1)
+        contexts = rag.get_contexts(user_input)
+        progress.update(search_task, completed=1)
+        
+        # Step 2: Generate response
+        progress_message = "[cyan]Generating response..."
+        if mode == "chat":
+            progress_message = "[cyan]Thinking..."
+        
+        gen_task = progress.add_task(progress_message, total=1)
+        
+        # Get initial part of response to display progress
+        response_parts = []
+        response_generator = rag.generate(
+            query=user_input,
+            mode=mode,
+            context=contexts
+        )
+        
+        for i, token in enumerate(response_generator):
+            response_parts.append(token)
+            if i == 5:  # After getting a few tokens, update progress
+                progress.update(gen_task, completed=0.3)
+            elif i == 15:
+                progress.update(gen_task, completed=0.6)
+            elif i == 30:
+                progress.update(gen_task, completed=0.9)
+        
+        progress.update(gen_task, completed=1)
+    
+    # Display the response
+    response = "".join(response_parts)
+    
+    # Choose border color based on mode
+    border_style = "green"
+    if mode == "chat":
+        border_style = "blue"
+    elif mode == "agent":
+        border_style = "purple"
+    
+    console.print(Panel(
+        Markdown(response),
+        border_style=border_style,
+        box=box.ROUNDED
+    ))
 
 
 def show_help():
@@ -269,6 +361,7 @@ def show_help():
     help_text = """
 # Ouro Commands
 
+- `/chat [topic]` - Start casual chat mode (optional topic)
 - `/ingest <file_path>` - Ingest a document into the knowledge base
 - `/ingest_dir <directory_path>` - Ingest all documents in a directory
 - `/ingest_text` - Ingest text directly
@@ -278,6 +371,8 @@ def show_help():
 - `/learn` - Learn from past conversations
 - `/help` - Show this help message
 - `/exit` or `/quit` - Exit the application
+
+In chat mode, you can also use `/help`, `/clear_memory`, `/models`, and `/change_model` commands.
     """
     console.print(Panel(
         Markdown(help_text),
@@ -303,87 +398,6 @@ def confirm_exit() -> bool:
     return response.lower() in ["y", "yes"]
 
 
-def wait_for_user_choice(timeout: int = WEB_TIMEOUT) -> str:
-    """Wait for user to choose interface mode."""
-    console.print(Panel(
-        "Press [bold cyan]T[/bold cyan] for Terminal Interface or [bold cyan]O[/bold cyan] for Web Interface",
-        title="Choose Interface",
-        border_style="cyan",
-        box=box.ROUNDED
-    ))
-    
-    console.print(f"[yellow]Auto-selecting Web Interface in {timeout} seconds...[/yellow]")
-    
-    # Simpler implementation that works on all platforms
-    try:
-        # Use Python's builtin input with a timeout using select on Unix
-        # or just input on Windows (will block until user input)
-        if platform.system() != "Windows":
-            import select
-            import termios
-            import tty
-            import sys
-            
-            def getch_unix():
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    tty.setraw(sys.stdin.fileno())
-                    rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
-                    if rlist:
-                        ch = sys.stdin.read(1)
-                        return ch
-                    return None
-                finally:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            
-            start_time = time.time()
-            while time.time() - start_time < timeout:
-                ch = getch_unix()
-                if ch == 't':
-                    console.print("[bold cyan]Terminal Interface selected[/bold cyan]")
-                    return "terminal"
-                elif ch == 'o':
-                    console.print("[bold cyan]Web Interface selected[/bold cyan]")
-                    return "web"
-                
-                # Update remaining time every second
-                elapsed = int(time.time() - start_time)
-                remaining = timeout - elapsed
-                if remaining != timeout - (elapsed - 1) and remaining > 0:
-                    console.print(f"[yellow]Auto-selecting Web Interface in {remaining} seconds...[/yellow]", end="\r")
-                
-                time.sleep(0.1)
-        else:
-            # Windows implementation
-            start_time = time.time()
-            while time.time() - start_time < timeout:
-                if msvcrt.kbhit():
-                    key = msvcrt.getch().decode('utf-8').lower()
-                    if key == 't':
-                        console.print("[bold cyan]Terminal Interface selected[/bold cyan]")
-                        return "terminal"
-                    elif key == 'o':
-                        console.print("[bold cyan]Web Interface selected[/bold cyan]")
-                        return "web"
-                
-                # Update remaining time every second
-                elapsed = int(time.time() - start_time)
-                remaining = timeout - elapsed
-                if remaining != timeout - (elapsed - 1) and remaining > 0:
-                    console.print(f"[yellow]Auto-selecting Web Interface in {remaining} seconds...[/yellow]", end="\r")
-                
-                time.sleep(0.1)
-    
-    except Exception as e:
-        # If any error occurs with the fancy input methods, fall back to basic behavior
-        logger.warning(f"Error in user choice input: {e}")
-        console.print("[yellow]Error detecting keypress. Defaulting to web interface.[/yellow]")
-    
-    console.print("[bold cyan]Web Interface auto-selected[/bold cyan]")
-    return "web"
-
-
 def main():
     """Main entry point for Ouro."""
     console.print("[bold cyan]Starting Ouro RAG System...[/bold cyan]")
@@ -403,24 +417,8 @@ def main():
         box=box.ROUNDED
     ))
     
-    # Let user choose interface mode
-    choice = wait_for_user_choice()
-    
-    if choice == "web":
-        if check_web_dependencies():
-            run_web_interface()
-        else:
-            console.print(Panel(
-                "Web interface dependencies not installed.\n"
-                "Please install required packages with:\n[bold]pip install fastapi uvicorn jinja2[/bold]\n"
-                "Falling back to terminal interface.",
-                title="Missing Dependencies",
-                border_style="yellow",
-                box=box.ROUNDED
-            ))
-            run_terminal_interface()
-    else:
-        run_terminal_interface()
+    # Run terminal interface directly
+    run_terminal_interface()
 
 
 if __name__ == "__main__":

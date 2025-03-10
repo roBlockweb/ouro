@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ouro"
-version = "1.0.4"
+version = "3.0.0"
 description = "Privacy-First Local RAG System"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -12,10 +12,17 @@ license = {text = "MIT"}
 authors = [
     {name = "Ouro Team"}
 ]
+maintainers = [
+    {name = "roBlock", email = "roblock@github.com"}
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Retrieval",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "torch>=2.0.0",
@@ -32,17 +39,26 @@ dependencies = [
     "accelerate>=0.22.0",
     "bitsandbytes>=0.41.0; platform_system != 'Darwin'",
     "safetensors>=0.3.2",
-    # Web interface dependencies
-    "fastapi>=0.100.0",
-    "uvicorn>=0.23.0",
-    "jinja2>=3.1.2",
-    "python-multipart>=0.0.6",
-    "asyncio>=3.4.3",
+    "requests>=2.28.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+]
+extras = [
+    "qdrant-client>=1.0.0",
+    "chromadb>=0.4.0",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/roBlockweb/ouro"
 "Bug Tracker" = "https://github.com/roBlockweb/ouro/issues"
+"Documentation" = "https://github.com/roBlockweb/ouro/blob/main/GUIDE.md"
 
 [tool.setuptools]
 packages = ["ouro"]

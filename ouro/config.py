@@ -15,28 +15,44 @@ VECTOR_STORE_DIR = DATA_DIR / "vector_store"
 DOCUMENTS_DIR = DATA_DIR / "documents"
 CONVERSATIONS_DIR = DATA_DIR / "conversations"
 
-# Web UI settings
-WEB_HOST = "localhost"
-WEB_PORT = 7860
-WEB_TIMEOUT = 20  # seconds before defaulting to web UI on startup
-
 # Vector store settings
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-ALTERNATE_EMBEDDING_MODEL = "hkunlp/instructor-large"
+ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"  # Higher quality alternative
+VECTOR_DB_TYPE = "faiss"  # Options: "faiss", "qdrant", "chroma"
 
 # Performance settings
 USE_QUANTIZATION = platform.system() == "Linux" or platform.system() == "Windows"
 USE_FAST_MODE = False  # generates text faster but may reduce quality
-MEMORY_TURNS = 10  # maximum conversation turns to remember
-SAVE_CONVERSATIONS = True
+
+# Memory settings
+MEMORY_TURNS = 10  # maximum conversation turns to keep in short-term memory
+SAVE_CONVERSATIONS = True  # save conversations to disk for later retrieval
+LONG_TERM_MEMORY = True  # enable long-term memory with embeddings
 
 # Default RAG settings
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
-TOP_K_RESULTS = 4
-MAX_NEW_TOKENS = 512
-TEMPERATURE = 0.1
-LOG_LEVEL = "INFO"
+CHUNK_SIZE = 500  # text chunk size for documents
+CHUNK_OVERLAP = 50  # overlap between chunks
+TOP_K_RESULTS = 4  # number of document chunks to retrieve
+MAX_NEW_TOKENS = 512  # maximum number of tokens to generate
+TEMPERATURE = 0.1  # temperature for text generation (lower = more deterministic)
+LOG_LEVEL = "INFO"  # logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+# Agent settings
+ENABLE_AGENTS = True  # Enable the agent functionality
+TOOLS_ENABLED = ["web_search", "math", "query_generation", "summarization"]
+AGENT_MODEL = "medium"  # Default model to use for agent functions
+ENABLE_REASONING = True  # Enable step-by-step reasoning for complex tasks
+
+# Web integration
+ENABLE_WEB_SEARCH = True  # Whether to allow web search capabilities
+WEB_SEARCH_PROVIDER = "duckduckgo"  # Options: "duckduckgo", "google", "bing"
+MAX_SEARCH_RESULTS = 3  # Maximum number of web search results to return
+
+# Integration with external services
+OLLAMA_INTEGRATION = False  # Enable integration with Ollama
+OLLAMA_HOST = "http://localhost:11434"  # Ollama API endpoint
+QDRANT_INTEGRATION = False  # Enable integration with Qdrant
+QDRANT_HOST = "http://localhost:6333"  # Qdrant API endpoint
 
 # Model configurations
 MODELS = {
@@ -66,8 +82,8 @@ MODELS = {
     },
     "large": {
         "name": "large",
-        "llm_model": "meta-llama/Llama-2-7b-chat-hf",
-        "embedding_model": DEFAULT_EMBEDDING_MODEL,
+        "llm_model": "mistralai/Mistral-7B-v0.1",
+        "embedding_model": ALTERNATE_EMBEDDING_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
         "memory_turns": MEMORY_TURNS,
@@ -79,7 +95,7 @@ MODELS = {
     "very_large": {
         "name": "very_large",
         "llm_model": "meta-llama/Llama-2-13b-chat-hf",
-        "embedding_model": DEFAULT_EMBEDDING_MODEL,
+        "embedding_model": ALTERNATE_EMBEDDING_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
         "memory_turns": MEMORY_TURNS,
@@ -97,6 +113,18 @@ MODELS = {
         "memory_turns": MEMORY_TURNS,
         "quantize": False,
         "use_mps": True,
+        "max_new_tokens": MAX_NEW_TOKENS,
+        "temperature": TEMPERATURE,
+    },
+    "ollama": {
+        "name": "ollama",
+        "llm_model": "llama2",  # This will be passed to Ollama API
+        "embedding_model": DEFAULT_EMBEDDING_MODEL,
+        "chunk_size": CHUNK_SIZE,
+        "chunk_overlap": CHUNK_OVERLAP,
+        "memory_turns": MEMORY_TURNS,
+        "quantize": False,
+        "use_ollama": True,
         "max_new_tokens": MAX_NEW_TOKENS,
         "temperature": TEMPERATURE,
     },
@@ -121,6 +149,50 @@ CRITICAL INSTRUCTIONS:
 Remember: You are having a DIRECT conversation with the user. There are NO other conversations happening.
 """
 
+# Enhanced system prompt for agent mode
+AGENT_SYSTEM_PROMPT = """
+You are Ouro, an advanced AI agent capable of solving complex tasks using reasoning and tools.
+
+CRITICAL INSTRUCTIONS:
+- When solving complex problems, break them down into clear steps
+- Use available tools when needed to gather information or perform actions
+- Be thorough in your analysis but concise in your responses
+- Always verify your work before providing final answers
+- If you don't have enough information, explain what you need
+- When using tools, explain your reasoning for choosing them
+- Do not hallucinate information or capabilities
+
+Remember: You are a helpful assistant with access to various tools. Use them wisely to help the user.
+"""
+
+# Enhanced system prompt for casual chat mode
+CHAT_SYSTEM_PROMPT = """
+You are Ouro, a friendly and helpful AI assistant designed for casual conversation.
+
+CRITICAL INSTRUCTIONS:
+- Be conversational, warm, and engaging
+- Respond directly to the user's queries and comments
+- Remember information shared during the conversation
+- Ask follow-up questions to show interest when appropriate
+- Use a natural, friendly tone
+- Keep your responses concise and to-the-point
+- Respect the user's privacy
+
+Remember: Your goal is to create a helpful and pleasant conversational experience.
+"""
+
 # API settings
-API_ENABLED = True
-API_PREFIX = "/api/v1"
+API_ENABLED = True  # Whether to enable API
+API_KEY_REQUIRED = False  # Whether to require API key for API access
+API_KEYS = []  # List of valid API keys if enabled
+
+# Sample API key configurations (for demonstration)
+# Uncomment and modify for actual use
+# API_KEYS = [
+#     "ouro-sk-OcwETUfGVROZ1qWSNZ4xTVb2VnKNcQpP", 
+#     "ouro-sk-P6JtfLG1JsTWxRZkLvVcNbB3HpSmY7Fa"
+# ]
+
+# Knowledge base metadata
+METADATA_FIELDS = ["source", "date", "author", "category", "tags", "priority"]
+DEFAULT_METADATA = {"source": "direct_input", "priority": "medium"}
