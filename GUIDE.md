@@ -2,6 +2,8 @@
 
 This guide provides detailed information on how to use Ouro effectively, covering both basic and advanced features.
 
+> **Note**: Ouro is inspired by projects like [Archon](https://github.com/coleam00/Archon) but focuses specifically on providing a robust terminal-based RAG system with local privacy and extensive agent capabilities.
+
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
@@ -386,6 +388,25 @@ You are Ouro, a friendly and helpful AI assistant designed for casual conversati
 ...
 """
 ```
+
+### Logging Configuration
+
+Ouro has a robust logging system that can be customized:
+
+```python
+# In ouro/constants.py
+LOG_LEVEL = "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
+
+The logger provides structured logging with event types and additional metadata. You can view logs in the `logs/` directory, which contains detailed information about system operations, user queries, and any errors that occur.
+
+Key features of the logging system:
+- Automatic log rotation with timestamps
+- Structured logging with event types
+- Comprehensive metadata for debugging
+- Specialized document ingestion logging
+
+The custom `OuroLogger` class extends Python's standard logging to provide these enhanced capabilities.
 
 ## Troubleshooting
 

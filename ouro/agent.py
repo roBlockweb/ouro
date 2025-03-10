@@ -82,47 +82,17 @@ class WebSearchTool(AgentTool):
             return f"Unknown search provider: {WEB_SEARCH_PROVIDER}"
     
     def _search_duckduckgo(self, query: str, num_results: int) -> str:
-        """Search DuckDuckGo."""
+        """Search DuckDuckGo using the web_search module."""
         try:
-            # This is a basic implementation using DuckDuckGo's HTML
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            params = {
-                'q': query,
-                'format': 'json',
-                'no_html': '1',
-                'no_redirect': '1'
-            }
+            from ouro.web_search import web_search
             
-            response = requests.get('https://api.duckduckgo.com/', params=params, headers=headers)
+            # Get formatted search results
+            result_text = web_search.get_search_results_as_text(query, num_results)
             
-            if response.status_code != 200:
-                return f"Error: Received status code {response.status_code}"
-            
-            data = response.json()
-            
-            # Process and format results
-            results = []
-            
-            # Add abstract if available
-            if data.get('Abstract'):
-                results.append(f"ABSTRACT: {data['Abstract']}")
-                if data.get('AbstractSource'):
-                    results[-1] += f" (Source: {data['AbstractSource']})"
-            
-            # Add related topics
-            if data.get('RelatedTopics'):
-                for i, topic in enumerate(data['RelatedTopics']):
-                    if i >= num_results:
-                        break
-                    if 'Text' in topic:
-                        results.append(f"TOPIC: {topic['Text']}")
-            
-            if not results:
+            if not result_text or result_text == "No search results found.":
                 return "No results found for the query."
             
-            return "\n\n".join(results)
+            return result_text
         
         except Exception as e:
             logger.error(f"Error in DuckDuckGo search: {e}")

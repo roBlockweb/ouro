@@ -321,10 +321,12 @@ class OuroRAG:
             try:
                 # Log user query
                 self.logger.info(f"User query: {query}", 
-                               event_type="user_query", 
-                               query=query, 
-                               with_history=with_history,
-                               mode=mode)
+                               extra={
+                                   "event_type": "user_query", 
+                                   "query": query, 
+                                   "with_history": with_history,
+                                   "mode": mode
+                               })
                 
                 # Retrieve relevant contexts if not provided
                 if context is None:
@@ -364,9 +366,11 @@ class OuroRAG:
                 
                 # Log system response
                 self.logger.info(f"System response to: {query[:30]}...", 
-                               event_type="system_response", 
-                               query=query,
-                               response_length=len(cleaned_response))
+                               extra={
+                                   "event_type": "system_response", 
+                                   "query": query,
+                                   "response_length": len(cleaned_response)
+                               })
                 
                 # Add to conversation memory, with flag for long-term if important
                 self.memory.add(query, cleaned_response, add_to_long_term=important_exchange)
@@ -424,7 +428,7 @@ class OuroRAG:
             
             # Log directory ingestion
             self.logger.log_document_ingestion(directory_path, len(documents), 
-                                              {"type": "directory"})
+                                            {"type": "directory"})
             
             return len(documents)
     
@@ -449,7 +453,7 @@ class OuroRAG:
             
             # Log text ingestion
             self.logger.log_document_ingestion("text_input", len(documents), 
-                                             {"type": "direct_text", "metadata": metadata})
+                                           {"type": "direct_text", "metadata": metadata})
             
             return len(documents)
     

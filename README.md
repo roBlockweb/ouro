@@ -2,6 +2,8 @@
 
 Ouro is a privacy-focused Retrieval-Augmented Generation (RAG) system that runs completely offline on your local machine. It allows you to interact with your documents using AI without sending data to external services.
 
+Inspired by projects like [Archon](https://github.com/coleam00/Archon), Ouro focuses on providing a robust, terminal-based experience with all the power of modern AI techniques while maintaining complete privacy and local execution.
+
 ## Features
 
 - **100% Private & Offline**: All processing happens on your machine
@@ -10,7 +12,7 @@ Ouro is a privacy-focused Retrieval-Augmented Generation (RAG) system that runs 
 - **Document Processing**: Support for TXT, PDF, Markdown, CSV, HTML, and JSON files
 - **Vector Search**: Efficient similarity search to find relevant information
 - **Conversation Memory**: Maintains context across multiple turns with short and long-term memory
-- **Agent Capabilities**: Solve complex tasks using reasoning and specialized tools
+- **Agent Capabilities**: Solve complex tasks using reasoning and specialized tools (web search, math, summarization)
 - **Web Search Integration**: Optional web search for up-to-date information
 - **Python API**: Local Python API for integration with other applications
 - **Apple Silicon Optimized**: Special configurations for M1/M2 Macs
@@ -38,6 +40,10 @@ Ouro is a privacy-focused Retrieval-Augmented Generation (RAG) system that runs 
   - Large model: 8-12GB RAM
   - Very Large model: 12-16GB+ RAM
 - **Storage**: ~10GB+ for models and vector database
+- **Optional**:
+  - **Ollama**: For local model serving with additional models
+  - **PyTorch with CUDA**: For GPU acceleration on NVIDIA GPUs
+  - **PyTorch with MPS**: Automatically used on Apple Silicon (M1/M2/M3)
 
 ## Quick Start
 
@@ -209,7 +215,27 @@ Edit `ouro/config.py` to customize settings:
 
 ## Advanced Usage
 
-### Running on Apple Silicon (M1/M2)
+### Agent Capabilities
+
+Ouro includes built-in agent capabilities for solving complex tasks:
+
+1. **Web Search**: Search the internet for information (via DuckDuckGo)
+2. **Math Calculations**: Perform mathematical operations securely
+3. **Query Generation**: Create effective search queries from questions
+4. **Summarization**: Condense long text into key points
+
+These tools can be configured in `ouro/config.py` by modifying the `TOOLS_ENABLED` list.
+
+Example usage:
+```
+>>: What is the population of Japan in 2023?
+Searching knowledge base...
+Thinking...
+
+Based on the latest data, Japan's population in 2023 was approximately 123.8 million people. This represents a continuing decline in Japan's population, which has been decreasing since 2010 due to low birth rates and minimal immigration.
+```
+
+### Running on Apple Silicon (M1/M2/M3)
 
 Ouro includes optimized settings for Apple Silicon:
 

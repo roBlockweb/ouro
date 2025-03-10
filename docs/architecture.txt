@@ -1,5 +1,7 @@
 # Ouro RAG System Architecture v3.0.0
 
+Ouro is designed with inspiration from advanced agent systems like Archon, implemented as a local-first, privacy-focused RAG system with agent capabilities. This document describes the core architecture of the system.
+
 ## Core Components
 
 1. **config.py**
@@ -13,6 +15,9 @@
    - Unified logging system for all components
    - Records user queries, system operations, and errors
    - Thread-safe logging setup for multi-user access
+   - Custom logger class extending Python's standard logging
+   - Structured logging with event types and metadata
+   - Specialized logging methods for document ingestion
 
 3. **llm.py**
    - Manages loading and interaction with language models
@@ -44,10 +49,19 @@
 
 8. **agent.py**
    - Implements agent capabilities with tools
-   - Web search, math, and summarization utilities
-   - Task planning and execution
+   - Web search, math, query generation, and summarization tools
+   - Task planning and execution with step-by-step reasoning
+   - Tool selection and parameter extraction
+   - Managed tool execution with error handling
+   - Structured planning process for complex tasks
+   
+9. **web_search.py**
+   - Provides web search capabilities via DuckDuckGo
+   - Clean interface for retrieving and formatting search results
+   - Handles network errors and rate limiting
+   - Configurable search provider and result count
 
-9. **main.py**
+10. **main.py**
    - Main entry point with terminal interface
    - Command autocomplete with tab completion
    - Handles startup checks and initialization

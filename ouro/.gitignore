@@ -1,0 +1,16 @@
+# Ouro-specific directories
+data/models/*
+!data/models/.gitkeep
+data/vector_store/*
+!data/vector_store/.gitkeep
+data/documents/*
+!data/documents/.gitkeep
+logs/*
+!logs/.gitkeep
+data/conversations/*.jsonl
+!data/conversations/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
