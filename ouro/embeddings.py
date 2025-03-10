@@ -10,7 +10,7 @@ import numpy as np
 import pickle
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from tqdm import tqdm
 
 from ouro.config import (
