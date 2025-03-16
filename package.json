@@ -1,0 +1,84 @@
+{
+  "name": "ouro",
+  "version": "2.5.0",
+  "description": "Ouro v2.5 - Privacy-first, offline AI assistant with Ollama integration",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder --mac",
+    "build:mac": "electron-builder --mac",
+    "build:mac-arm64": "electron-builder --mac --arm64",
+    "build:mac-x64": "electron-builder --mac --x64",
+    "build:all": "electron-builder --mac",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "Ouro Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.1",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "electron-log": "^5.3.2",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.2.0",
+    "js-yaml": "^4.1.0",
+    "keytar": "^7.9.0"
+  },
+  "build": {
+    "appId": "com.ouro.assistant",
+    "productName": "Ouro",
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "core/",
+        "to": "core",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "assets/",
+        "to": "assets"
+      }
+    ],
+    "files": [
+      "**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["zip", "dmg"],
+      "darkModeSupport": true,
+      "icon": "assets/icon.icns",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "background": "assets/dmg-background.png",
+      "icon": "assets/icon.icns",
+      "iconSize": 100,
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 190
+        },
+        {
+          "x": 410,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    }
+  }
+}

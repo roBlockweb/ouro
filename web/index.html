@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ouro v2.1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">
+        <h1>Ouro</h1>
+        <span class="version">v2.1</span>
+      </div>
+      <nav>
+        <button class="active">Chat</button>
+        <button>Documents</button>
+        <button>Settings</button>
+      </nav>
+    </header>
+    
+    <main>
+      <div class="sidebar">
+        <div class="models">
+          <h3>Models</h3>
+          <div class="model-select">
+            <select id="model-selector">
+              <option value="llama3:8b">Llama 3 (8B)</option>
+              <option value="llama3:70b-q4_K_M">Llama 3 (70B)</option>
+              <option value="phi:3-mini">Phi-3 Mini</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="conversations">
+          <h3>Conversations</h3>
+          <div class="new-chat">
+            <button id="new-chat">+ New Chat</button>
+          </div>
+          <ul class="chat-list">
+            <li class="chat-item active">General Chat</li>
+            <li class="chat-item">Document Q&A</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="chat-container">
+        <div class="messages">
+          <div class="message system">
+            <div class="message-content">
+              <p>Welcome to Ouro v2.1. I'm your offline AI assistant powered by Ollama. How can I help you today?</p>
+            </div>
+          </div>
+          <!-- Messages will appear here -->
+        </div>
+        
+        <div class="input-area">
+          <textarea id="user-input" placeholder="Send a message..."></textarea>
+          <button id="send-button">Send</button>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>

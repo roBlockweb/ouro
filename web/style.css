@@ -1,0 +1,234 @@
+/* Ouro v2.1 Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary-color: #6200EA;
+  --primary-light: #7c4dff;
+  --primary-dark: #4b00b3;
+  --accent-color: #03DAC5;
+  --background-dark: #121212;
+  --background-card: #1e1e1e;
+  --background-light: #2d2d2d;
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(255, 255, 255, 0.12);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--background-dark);
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--background-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+}
+
+.logo h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.version {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+nav button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+nav button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Main content */
+main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--background-card);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+}
+
+.models {
+  margin-bottom: 2rem;
+}
+
+.models h3, .conversations h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.8rem;
+}
+
+.model-select select {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.new-chat {
+  margin-bottom: 1rem;
+}
+
+.new-chat button {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.chat-list {
+  list-style: none;
+}
+
+.chat-item {
+  padding: 0.6rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.chat-item.active {
+  background-color: rgba(98, 0, 234, 0.2);
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 1.5rem;
+  max-width: 80%;
+}
+
+.message.system {
+  align-self: flex-start;
+}
+
+.message.user {
+  align-self: flex-end;
+}
+
+.message-content {
+  padding: 1rem;
+  border-radius: 0.8rem;
+  background-color: var(--background-card);
+}
+
+.message.user .message-content {
+  background-color: var(--primary-color);
+}
+
+.input-area {
+  padding: 1rem;
+  display: flex;
+  gap: 0.8rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-card);
+}
+
+#user-input {
+  flex: 1;
+  height: 3rem;
+  padding: 0.8rem 1rem;
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  resize: none;
+  font-family: inherit;
+}
+
+#send-button {
+  padding: 0 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  main {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: 30%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+}

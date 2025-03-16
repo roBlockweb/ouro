@@ -1,85 +1,145 @@
-# Ouro v2.1
+# Ouro v2.5 - Privacy-First Offline AI Assistant
 
-Ouro is a privacy-first, offline AI assistant powered by Ollama. It provides a seamless, user-friendly interface for interacting with local large language models without sending your data to external services.
+Ouro is a privacy-focused AI assistant that runs completely on your local machine, powered by [Ollama](https://ollama.ai). This application enables you to use powerful large language models without sending any data to external servers, ensuring total privacy and control over your information.
 
 ![Ouro Logo](assets/logo.png)
 
-## Features
+## Key Features
 
-- **100% Offline Operation**: All processing happens locally on your machine
-- **Privacy-Focused**: Your data never leaves your computer
-- **Retrieval-Augmented Generation (RAG)**: Chat with your documents without internet
-- **Minimalist UI**: Clean, monochrome interface designed for productivity
-- **Dependency-Aware**: Seamlessly integrates with Ollama and Qdrant
+- **100% Offline Operation**: All processing happens on your machine
+- **Complete Privacy**: Your data never leaves your computer
+- **Powered by Ollama**: Leverage the latest open-source language models
+- **RAG Capabilities**: Chat with your own documents using vector search
+- **User-Friendly Interface**: Modern, intuitive design
+- **Cross-Platform**: Works on macOS (Windows and Linux support coming soon)
 
 ## System Requirements
 
-- **Operating System**: macOS, Windows, or Linux
-- **RAM**: Minimum 8GB recommended (4GB for smaller models)
-- **Storage**: 1GB for the application, plus space for models and documents
-- **Dependencies**:
-  - [Ollama](https://ollama.ai/download) - for running the language models
-  - [Docker](https://www.docker.com/products/docker-desktop/) - for Qdrant (optional but recommended for document RAG)
+- **Operating System**: macOS 11+ (Big Sur or newer), Windows 10+ or Linux (Ubuntu 20.04+)
+- **RAM**: 8GB minimum, 16GB+ recommended
+- **Storage**: 10GB for application, 5-50GB for models (depending on model size)
+- **Additional Requirements**:
+  - [Ollama](https://ollama.ai/download) must be installed
+  - [Docker](https://www.docker.com/) (optional, for Qdrant vector database)
 
 ## Installation
 
-### From Release
+### macOS
 
-1. Download the latest release for your platform from the [Releases](https://github.com/yourusername/ouro/releases) page
-2. Open the DMG file (macOS) or run the installer (Windows/Linux)
-3. Follow the installation wizard
+1. Download the latest release DMG file from the [Releases page](https://github.com/roBlockweb/ouro/releases)
+2. Open the DMG file and drag Ouro to your Applications folder
+3. Run Ouro from your Applications folder
+4. Follow the setup wizard to configure your installation
 
-### From Source
+### Building from Source
 
-1. Clone this repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Build the application:
-   ```
-   npm run build
-   ```
-4. The built application will be in the `dist` directory
+If you prefer to build from source:
 
-## Usage
+```bash
+# Clone the repository
+git clone https://github.com/roBlockweb/ouro.git
+cd ouro
 
-1. Launch Ouro from your applications folder
-2. Ouro will automatically check for Ollama and Qdrant, helping you set them up if needed
-3. Select a model based on your hardware capabilities
-4. Start chatting with your AI assistant
-5. Use the document interface to upload and chat with your documents
+# Install dependencies
+npm install
+
+# Start in development mode
+npm start
+
+# Build for your platform
+npm run build
+```
+
+## Quick Start
+
+1. Install and run Ouro
+2. Complete the setup wizard, which will:
+   - Check your system compatibility
+   - Help install required dependencies (Ollama, Qdrant)
+   - Choose an appropriate model for your hardware
+3. Once setup is complete, you can start chatting with your AI assistant
+4. Use the Documents tab to upload and chat with your own documents
+
+## Models
+
+Ouro supports various models through Ollama:
+
+- **Small Models** (8-10B parameters): Great for lower-end hardware, faster responses
+  - Recommended: `llama3:8b` or `phi:3-mini`
+- **Medium Models** (30-70B parameters, quantized): Better quality with moderate hardware
+  - Recommended: `llama3:70b-q4_K_M`
+- **Large Models** (70B+ parameters): Best quality, requires high-end hardware
+  - Recommended: `llama3:70b`
+
+## RAG (Retrieval Augmented Generation)
+
+Ouro includes RAG capabilities to chat with your documents:
+
+1. Go to the Documents tab
+2. Upload PDF, TXT, DOCX, or markdown files
+3. The files will be processed and indexed in the vector database
+4. Switch to Chat mode and ask questions about your documents
 
 ## Development
 
 ### Project Structure
 
-- `src/` - Electron application source code
-  - `main/` - Main Electron process
-  - `ui/` - UI for the installer
-- `core/` - Core functionality
-  - `web/` - Web-based chat interface
-  - `config.yaml` - Configuration file
-  - `start_server.py` - Python web server script
-
-### Running in Development Mode
-
 ```
-npm start
+ouro/
+├── assets/               # Application icons and assets
+├── config/               # Configuration files
+├── core/                 # Python server components
+│   ├── start_server.py   # Main Python server
+│   ├── data/             # Document storage
+│   ├── models/           # Model configurations
+│   └── web/              # Web interface files
+├── src/                  # Electron application source
+│   ├── main/             # Main process code
+│   │   ├── index.js      # Electron entry point
+│   │   └── preload.js    # Preload script for IPC
+│   └── ui/               # Renderer process UI code
+│       ├── css/          # Stylesheets
+│       ├── js/           # UI JavaScript
+│       └── index.html    # Main HTML template
+└── build-*.sh            # Build scripts
 ```
 
-### Building for Distribution
+### Technology Stack
 
-```
-npm run build
-```
+- **Frontend**: HTML, CSS, JavaScript
+- **Backend**: Node.js, Electron, Python
+- **AI Components**: Ollama, Qdrant
+- **Build Tools**: electron-builder
+
+## Security
+
+Ouro is designed with security in mind:
+
+- **No Network Requirement**: After installation, no internet connection needed
+- **Local Processing**: All data stays on your device
+- **Sandboxed Execution**: Proper context isolation in Electron
+- **Content Security Policy**: Restricted script execution
+
+## Contributing
+
+Contributions are welcome! Please see [ideas.md](ideas.md) for roadmap and development ideas.
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
 
-## Acknowledgements
+## Acknowledgments
 
-- [Ollama](https://ollama.ai/) for making local LLMs easily accessible
-- [Qdrant](https://qdrant.tech/) for the vector database used in RAG functionality
-- [Electron](https://www.electronjs.org/) for the application framework
+- The [Ollama](https://ollama.ai) team for making local LLMs accessible
+- The [Qdrant](https://qdrant.tech) team for their excellent vector database
+- The open-source AI community
+
+---
+
+**Privacy Notice**: Ouro is designed to operate completely offline. No data is collected or transmitted to external servers. All processing happens locally on your device.

@@ -1,0 +1,11 @@
+# Ouro v2.5 Configuration
+version: 2.5
+ollama:
+  model: llama3:8b
+  embeddings: nomic-embed-text
+qdrant:
+  url: http://localhost:6333
+  collection: ouro_docs
+ui:
+  theme: dark
+  port: 3000

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+  <title>Ouro v2.5 Setup</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="logo">
+        <img src="../../assets/logo.png" alt="Ouro Logo">
+      </div>
+      <div class="steps">
+        <div class="step active" data-step="welcome">
+          <div class="step-number">1</div>
+          <div class="step-label">Welcome</div>
+        </div>
+        <div class="step" data-step="system-check">
+          <div class="step-number">2</div>
+          <div class="step-label">System Check</div>
+        </div>
+        <div class="step" data-step="dependencies">
+          <div class="step-number">3</div>
+          <div class="step-label">Dependencies</div>
+        </div>
+        <div class="step" data-step="model-selection">
+          <div class="step-number">4</div>
+          <div class="step-label">Model Selection</div>
+        </div>
+        <div class="step" data-step="installation">
+          <div class="step-number">5</div>
+          <div class="step-label">Installation</div>
+        </div>
+        <div class="step" data-step="completion">
+          <div class="step-number">6</div>
+          <div class="step-label">Complete</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <!-- Welcome Page -->
+      <div class="page" id="welcome-page">
+        <div class="page-header">
+          <h1>Welcome to Ouro v2.5</h1>
+          <p>Your Privacy-First, Offline AI Assistant</p>
+        </div>
+        <div class="page-content">
+          <p>Ouro is a privacy-focused AI solution that runs completely on your own hardware, powered by Ollama. 
+            No subscription fees, no data sharing, and no internet connection required after initial setup.</p>
+          
+          <div class="features">
+            <div class="feature">
+              <h3>100% Offline</h3>
+              <p>All processing happens locally on your machine</p>
+            </div>
+            <div class="feature">
+              <h3>Complete Privacy</h3>
+              <p>Your data never leaves your computer</p>
+            </div>
+            <div class="feature">
+              <h3>Powerful RAG</h3>
+              <p>Chat with your documents without internet</p>
+            </div>
+          </div>
+          
+          <div class="terms-container">
+            <h3>Terms and Conditions</h3>
+            <div class="terms-box">
+              <p><strong>1. Open Source License</strong></p>
+              <p>This software is provided under the Apache License 2.0. You are free to use, modify, and distribute this software according to the terms of this license.</p>
+              
+              <p><strong>2. No Warranty</strong></p>
+              <p>This software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement.</p>
+              
+              <p><strong>3. Privacy</strong></p>
+              <p>Ouro is designed to process all data locally on your machine. No data is transmitted to external servers.</p>
+              
+              <p><strong>4. Third-Party Components</strong></p>
+              <p>Ouro includes several third-party components that are subject to their own licenses. By using Ouro, you agree to comply with these licenses as well.</p>
+              
+              <p><strong>5. Resource Usage</strong></p>
+              <p>Ouro uses system resources including CPU, RAM, and disk space based on the models you select. You are responsible for ensuring your system has adequate resources.</p>
+            </div>
+            <div class="agree-terms">
+              <input type="checkbox" id="agree-terms">
+              <label for="agree-terms">I agree to the terms and conditions</label>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button primary" id="welcome-next" disabled>Next</button>
+        </div>
+      </div>
+      
+      <!-- System Check Page -->
+      <div class="page" id="system-check-page" style="display: none;">
+        <div class="page-header">
+          <h1>System Check</h1>
+          <p>Verifying your system compatibility</p>
+        </div>
+        <div class="page-content">
+          <div class="system-checking">
+            <div class="loader"></div>
+            <p>Analyzing your system...</p>
+          </div>
+          
+          <div class="system-info" style="display: none;">
+            <h3>System Information</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Operating System:</div>
+                <div class="info-value" id="os-info">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">CPU Cores:</div>
+                <div class="info-value" id="cpu-info">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Memory:</div>
+                <div class="info-value" id="memory-info">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Ollama:</div>
+                <div class="info-value" id="ollama-info">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Qdrant:</div>
+                <div class="info-value" id="qdrant-info">-</div>
+              </div>
+            </div>
+            
+            <div class="system-recommendations">
+              <h3>Recommendations</h3>
+              <div id="recommendations-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button secondary" id="system-check-back">Back</button>
+          <button class="button primary" id="system-check-next">Next</button>
+        </div>
+      </div>
+      
+      <!-- Dependencies Page -->
+      <div class="page" id="dependencies-page" style="display: none;">
+        <div class="page-header">
+          <h1>Required Dependencies</h1>
+          <p>Essential components for Ouro to function</p>
+        </div>
+        <div class="page-content">
+          <p class="section-intro">Ouro requires the following dependencies to be installed on your system.</p>
+          
+          <div class="dependency-items">
+            <div class="dependency-item">
+              <div class="dependency-header">
+                <h3>Ollama</h3>
+                <div class="dependency-status" id="ollama-status">Not Detected</div>
+              </div>
+              <p>Ollama is the core AI engine that powers Ouro's language model capabilities.</p>
+              <div class="dependency-actions">
+                <button class="button primary" id="install-ollama">Install Ollama</button>
+                <a href="https://ollama.ai/download" target="_blank" class="link">Learn More</a>
+              </div>
+            </div>
+            
+            <div class="dependency-item">
+              <div class="dependency-header">
+                <h3>Qdrant Vector Database</h3>
+                <div class="dependency-status" id="qdrant-status">Not Detected</div>
+              </div>
+              <p>Qdrant is a vector database that enables efficient similarity search for RAG capabilities.</p>
+              <div class="dependency-actions">
+                <button class="button primary" id="install-qdrant">Install Qdrant</button>
+                <a href="https://qdrant.tech/" target="_blank" class="link">Learn More</a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="install-path">
+            <h3>Installation Directory</h3>
+            <div class="path-selector">
+              <input type="text" id="install-path" readonly>
+              <button class="button small" id="browse-button">Browse</button>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button secondary" id="dependencies-back">Back</button>
+          <button class="button primary" id="dependencies-next" disabled>Next</button>
+        </div>
+      </div>
+      
+      <!-- Model Selection Page -->
+      <div class="page" id="model-selection-page" style="display: none;">
+        <div class="page-header">
+          <h1>Model Selection</h1>
+          <p>Choose the AI model that works for you</p>
+        </div>
+        <div class="page-content">
+          <p class="model-intro">Select a model that fits your hardware capabilities. Larger models offer better performance but require more system resources.</p>
+          
+          <div class="model-options" id="model-options-list">
+            <!-- Model options will be populated by JavaScript -->
+          </div>
+          
+          <div class="advanced-options">
+            <div class="toggle-container">
+              <input type="checkbox" id="show-advanced">
+              <label for="show-advanced">Show advanced options</label>
+            </div>
+            
+            <div class="advanced-settings" style="display: none;">
+              <h3>Advanced Model Settings</h3>
+              
+              <div class="setting-item">
+                <label for="custom-model">Custom Model Name:</label>
+                <input type="text" id="custom-model" placeholder="e.g., llama3:8b">
+                <p class="help-text">Enter any model name supported by Ollama</p>
+              </div>
+              
+              <div class="setting-item">
+                <label for="memory-limit">Memory Limit:</label>
+                <select id="memory-limit">
+                  <option value="4G">4 GB</option>
+                  <option value="8G" selected>8 GB</option>
+                  <option value="12G">12 GB</option>
+                  <option value="16G">16 GB</option>
+                  <option value="24G">24 GB</option>
+                  <option value="32G">32 GB</option>
+                </select>
+                <p class="help-text">Maximum RAM allocated to the model</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button secondary" id="model-selection-back">Back</button>
+          <button class="button primary" id="model-selection-next">Next</button>
+        </div>
+      </div>
+      
+      <!-- Installation Page -->
+      <div class="page" id="installation-page" style="display: none;">
+        <div class="page-header">
+          <h1>Installing Ouro</h1>
+          <p>Setting up your AI assistant</p>
+        </div>
+        <div class="page-content">
+          <div class="installation-progress">
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="install-progress-bar"></div>
+            </div>
+            <div class="progress-text" id="install-progress-text">Preparing installation...</div>
+          </div>
+          
+          <div class="installation-steps">
+            <div class="install-step" data-step="copying">
+              <div class="step-status"></div>
+              <div class="step-label">Copying files</div>
+            </div>
+            <div class="install-step" data-step="configuring">
+              <div class="step-status"></div>
+              <div class="step-label">Configuring environment</div>
+            </div>
+            <div class="install-step" data-step="shortcuts">
+              <div class="step-status"></div>
+              <div class="step-label">Creating shortcuts</div>
+            </div>
+            <div class="install-step" data-step="finalizing">
+              <div class="step-status"></div>
+              <div class="step-label">Finalizing installation</div>
+            </div>
+          </div>
+          
+          <div class="installation-log">
+            <h3>Installation Log</h3>
+            <div class="log-container" id="install-log"></div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button secondary" id="installation-back" disabled>Back</button>
+          <button class="button primary" id="installation-next" disabled>Next</button>
+        </div>
+      </div>
+      
+      <!-- Completion Page -->
+      <div class="page" id="completion-page" style="display: none;">
+        <div class="page-header">
+          <h1>Installation Complete</h1>
+          <p>Your personal AI assistant is ready to use</p>
+        </div>
+        <div class="page-content">
+          <div class="completion-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
+            </svg>
+          </div>
+          
+          <div class="completion-message">
+            <h2>Congratulations!</h2>
+            <p>Ouro v2.1 has been successfully installed on your computer. You can now use your personal, offline AI assistant to chat, search, and work with your documents without internet.</p>
+          </div>
+          
+          <div class="next-steps">
+            <h3>Next Steps:</h3>
+            <ul>
+              <li>Launch Ouro to start using your AI assistant</li>
+              <li>Upload documents through the RAG interface</li>
+              <li>Chat with your documents offline</li>
+              <li>Explore the settings to customize your experience</li>
+            </ul>
+          </div>
+          
+          <div class="installation-summary">
+            <h3>Installation Summary</h3>
+            <div class="summary-item">
+              <div class="summary-label">Installation Location:</div>
+              <div class="summary-value" id="summary-location"></div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Selected Model:</div>
+              <div class="summary-value" id="summary-model"></div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <button class="button secondary" id="open-docs">Open Documentation</button>
+          <button class="button primary" id="launch-app">Launch Ouro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/installer.js"></script>
+</body>
+</html>
