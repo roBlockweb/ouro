@@ -1,4 +1,4 @@
-// Ouro v2.1 UI Application
+// Ouro v2.5 UI Application
 document.addEventListener('DOMContentLoaded', () => {
   // DOM elements
   const userInput = document.getElementById('user-input');

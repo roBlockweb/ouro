@@ -521,8 +521,8 @@ async function copyOuroCore(targetDir, options) {
           // Create default file if it doesn't exist
           if (file === 'config.yaml') {
             const defaultConfig = `
-# Ouro v2.1 Configuration
-version: 2.1
+# Ouro v2.5 Configuration
+version: 2.5
 ollama:
   model: ${options.selectedModel || 'llama3:8b'}
   embeddings: nomic-embed-text
@@ -737,7 +737,7 @@ done
 echo "Starting Ouro web interface..."
 python3 start_server.py &
 
-echo "Ouro v2.1 started successfully!"
+echo "Ouro v2.5 started successfully!"
 `;
     
     const linuxScriptPath = path.join(targetDir, 'start_ouro.sh');
@@ -921,7 +921,7 @@ async function createUIFiles(targetDir) {
         <div class="messages">
           <div class="message system">
             <div class="message-content">
-              <p>Welcome to Ouro v2.1. I'm your offline AI assistant powered by Ollama. How can I help you today?</p>
+              <p>Welcome to Ouro v2.5. I'm your offline AI assistant powered by Ollama. How can I help you today?</p>
             </div>
           </div>
           <!-- Messages will appear here -->
@@ -942,7 +942,7 @@ async function createUIFiles(targetDir) {
     await fs.writeFile(path.join(webDir, 'index.html'), htmlContent);
     
     // Create CSS file
-    const cssContent = `/* Ouro v2.1 Styles */
+    const cssContent = `/* Ouro v2.5 Styles */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1180,7 +1180,7 @@ main {
     await fs.writeFile(path.join(webDir, 'style.css'), cssContent);
     
     // Create JS file
-    const jsContent = `// Ouro v2.1 UI Application
+    const jsContent = `// Ouro v2.5 UI Application
 document.addEventListener('DOMContentLoaded', () => {
   // DOM elements
   const userInput = document.getElementById('user-input');
@@ -1535,7 +1535,7 @@ async function createDesktopShortcut(targetDir) {
           $Shortcut = $WshShell.CreateShortcut("${shortcutPath.replace(/\\/g, '\\\\')}")
           $Shortcut.TargetPath = "${startScript.replace(/\\/g, '\\\\')}"
           $Shortcut.WorkingDirectory = "${targetDir.replace(/\\/g, '\\\\')}"
-          $Shortcut.Description = "Launch Ouro v2.1 - Privacy-first offline assistant"
+          $Shortcut.Description = "Launch Ouro v2.5 - Privacy-first offline assistant"
           $Shortcut.Save()
         `;
         
@@ -1579,9 +1579,9 @@ cd "${targetDir}"
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>2.1</string>
+  <string>2.5</string>
   <key>CFBundleVersion</key>
-  <string>2.1</string>
+  <string>2.5</string>
   <key>NSHumanReadableCopyright</key>
   <string>Copyright © 2025. All rights reserved.</string>
 </dict>

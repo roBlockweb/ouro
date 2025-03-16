@@ -134,6 +134,10 @@ Contributions are welcome! Please see [ideas.md](ideas.md) for roadmap and devel
 
 This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
 
+## Credits
+
+Developed by roBlock. Special thanks to all contributors who made this project possible.
+
 ## Acknowledgments
 
 - The [Ollama](https://ollama.ai) team for making local LLMs accessible

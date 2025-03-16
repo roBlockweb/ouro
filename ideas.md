@@ -193,6 +193,10 @@ For developers looking to contribute or extend Ouro:
    - UI components and themes
    - Document processors
 
+## Credits
+
+Developed by roBlock. This project is the result of extensive research and development in the field of privacy-focused AI applications.
+
 ## Conclusion
 
 Ouro aims to be the definitive privacy-first AI assistant that respects user autonomy and data sovereignty. By focusing on offline operation and local processing, we're creating a tool that provides the benefits of AI without the privacy concerns associated with cloud-based solutions.

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Ouro v2.1 Dependency Installer for Linux
-echo "Installing dependencies for Ouro v2.1..."
+# Ouro v2.5 Dependency Installer for Linux
+echo "Installing dependencies for Ouro v2.5..."
 
 # Check for Docker
 if ! command -v docker &> /dev/null; then

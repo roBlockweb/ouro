@@ -1,26 +1,31 @@
-# Ouro v2.1 - Release Notes
+# Ouro v2.5 - Release Notes
 
-## Major Improvements from v2.0
+## Major Improvements
 
-1. **Fixed Black UI Issue**: Resolved the issue where the application window appeared but showed a black/empty UI by:
-   - Improving server startup process with better error handling
-   - Ensuring Python server has started before attempting to load UI
-   - Properly resolving resource paths in both development and production environments
-
-2. **Enhanced Architecture**:
+1. **Stable Architecture**:
    - Complete rewrite of the Python web server with proper API endpoints
-   - Improved error handling and logging throughout the application
+   - Robust error handling and enhanced logging throughout the application
    - Proper event handling for installation and progress feedback
 
-3. **Enhanced UI/UX**:
+2. **Enhanced UI/UX**:
    - Seamless integration with Ollama API
    - Fallback mechanisms when API calls fail
    - Comprehensive installer flow with system checks and model recommendations
 
-4. **Streamlined Build Process**:
-   - Simplified build scripts for various platforms
-   - Proper DMG configuration for macOS distribution
-   - Configuration to include all necessary resources
+3. **Privacy-First Design**:
+   - 100% offline operation with no data sent to external servers
+   - All AI processing happens locally through Ollama
+   - Full control over your data and models
+
+4. **RAG Capabilities**:
+   - Integration with Qdrant vector database
+   - Document chat capabilities
+   - Efficient vector search for knowledge retrieval
+
+5. **Multi-platform Support**:
+   - macOS application with native experience
+   - Linux compatibility
+   - Streamlined installation process across platforms
 
 ## Key Components
 
@@ -56,6 +61,10 @@
 2. Use `npm start` for development mode
 3. Use `./build-standalone.sh` for creating a distributable package
 
+## Credits
+
+Developed by roBlock. Special thanks to the Ollama and Qdrant teams for their incredible open-source tools that make local AI processing possible.
+
 ## Final Notes
 
-Ouro v2.1 represents a significant enhancement over v2.0, providing a stable, production-ready application with a focus on user experience, reliability, and privacy. The architecture has been simplified while improving robustness, and the installer provides a smooth onboarding experience for new users.
+Ouro v2.5 provides a stable, production-ready application with a focus on user experience, reliability, and privacy. The architecture has been simplified while improving robustness, and the installer provides a smooth onboarding experience for new users.
